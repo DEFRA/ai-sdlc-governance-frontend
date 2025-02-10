@@ -10,4 +10,3 @@ coverage
 .cache
 .envrc
 tsconfig.tsbuildinfo
-ai-sdlc-governance-frontend.code-workspace
