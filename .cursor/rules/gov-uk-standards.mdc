@@ -19,6 +19,13 @@ globs: *.njk, *.js
 - Use govuk-main-wrapper for main content
 - Use govuk-grid-row and govuk-grid-column-* for grid layouts
 
+## Template Inheritance
+- Always use search path style imports (e.g. {% extends "layouts/page.njk" %})
+- Never use relative paths in extends/include statements
+- Base template is at src/server/common/templates/layouts/page.njk
+- Feature templates should be in src/server/{feature}/views/
+- Common components in src/server/common/components/
+
 ## Component Usage
 - Use GDS components with data-module="govuk-button" where needed
 - Follow GDS class naming:
