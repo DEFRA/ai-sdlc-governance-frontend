@@ -52,7 +52,7 @@ describe('#context', () => {
             url: '/governance-templates'
           }
         ],
-        serviceName: 'ai-sdlc-governance-frontend',
+        serviceName: 'Defra SDLC Governance Checklist',
         serviceUrl: '/'
       })
     })
@@ -146,7 +146,7 @@ describe('#context cache', () => {
             url: '/governance-templates'
           }
         ],
-        serviceName: 'ai-sdlc-governance-frontend',
+        serviceName: 'Defra SDLC Governance Checklist',
         serviceUrl: '/'
       })
     })
