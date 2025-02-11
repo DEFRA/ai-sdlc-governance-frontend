@@ -21,6 +21,28 @@ export const governanceTemplates = {
         },
         {
           method: 'GET',
+          path: '/governance-templates/new',
+          handler: governanceTemplatesController.new.bind(
+            governanceTemplatesController
+          ),
+          options: {
+            description: 'Create new governance template',
+            auth: false
+          }
+        },
+        {
+          method: 'POST',
+          path: '/governance-templates',
+          handler: governanceTemplatesController.create.bind(
+            governanceTemplatesController
+          ),
+          options: {
+            description: 'Create new governance template',
+            auth: false
+          }
+        },
+        {
+          method: 'GET',
           path: '/governance-templates/{id}',
           handler: governanceTemplatesController.detail.bind(
             governanceTemplatesController

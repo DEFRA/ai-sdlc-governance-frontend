@@ -1,0 +1,88 @@
+{% extends "layouts/page.njk" %}
+
+{% from "govuk/components/input/macro.njk" import govukInput %}
+{% from "govuk/components/textarea/macro.njk" import govukTextarea %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+
+{% block pageTitle %}{{ pageTitle }} - Defra AI Code Review{% endblock %}
+
+{% block content %}
+<div class="govuk-width-container">
+  <main class="govuk-main-wrapper" id="main-content" role="main">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+        <a href="/governance-templates" class="govuk-back-link">Back to templates</a>
+
+        {% if error %}
+          {{ govukErrorSummary({
+            titleText: "There is a problem",
+            errorList: [
+              {
+                text: error,
+                href: "#name"
+              }
+            ]
+          }) }}
+        {% endif %}
+
+        <h1 class="govuk-heading-xl">Create New Governance Template</h1>
+
+        <form method="POST" action="/governance-templates" novalidate>
+          {{ govukInput({
+            label: {
+              text: "Template Name",
+              classes: "govuk-label--m"
+            },
+            id: "name",
+            name: "name",
+            value: values.name if values else "",
+            errorMessage: {
+              text: "Enter a template name"
+            } if error,
+            attributes: {
+              "data-testid": "template-name"
+            }
+          }) }}
+
+          {{ govukInput({
+            label: {
+              text: "Version",
+              classes: "govuk-label--m"
+            },
+            id: "version",
+            name: "version",
+            value: values.version if values else "",
+            errorMessage: {
+              text: "Enter a version"
+            } if error,
+            attributes: {
+              "data-testid": "template-version"
+            }
+          }) }}
+
+          {{ govukTextarea({
+            label: {
+              text: "Description",
+              classes: "govuk-label--m"
+            },
+            id: "description",
+            name: "description",
+            value: values.description if values else "",
+            attributes: {
+              "data-testid": "template-description"
+            }
+          }) }}
+
+          {{ govukButton({
+            text: "Create template",
+            attributes: {
+              "data-testid": "submit-button"
+            }
+          }) }}
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %} 
