@@ -19,23 +19,80 @@ describe('#buildNavigation', () => {
       },
       {
         isActive: false,
-        text: 'About',
-        url: '/about'
+        text: 'Projects',
+        url: '/projects'
+      },
+      {
+        isActive: false,
+        text: 'Governance Templates',
+        url: '/governance-templates'
       }
     ])
   })
 
-  test('Should provide expected highlighted navigation details', () => {
-    expect(buildNavigation(mockRequest({ path: '/' }))).toEqual([
+  test('Should mark projects as active when on projects path', () => {
+    expect(buildNavigation(mockRequest({ path: '/projects' }))).toEqual([
+      {
+        isActive: false,
+        text: 'Home',
+        url: '/'
+      },
       {
         isActive: true,
+        text: 'Projects',
+        url: '/projects'
+      },
+      {
+        isActive: false,
+        text: 'Governance Templates',
+        url: '/governance-templates'
+      }
+    ])
+  })
+
+  test('Should mark governance templates as active when on governance templates path', () => {
+    expect(
+      buildNavigation(mockRequest({ path: '/governance-templates' }))
+    ).toEqual([
+      {
+        isActive: false,
         text: 'Home',
         url: '/'
       },
       {
         isActive: false,
-        text: 'About',
-        url: '/about'
+        text: 'Projects',
+        url: '/projects'
+      },
+      {
+        isActive: true,
+        text: 'Governance Templates',
+        url: '/governance-templates'
+      }
+    ])
+  })
+
+  test('should build navigation with correct structure', () => {
+    const mockConfig = {
+      path: '/'
+    }
+
+    const result = buildNavigation(mockConfig)
+    expect(result).toEqual([
+      {
+        text: 'Home',
+        url: '/',
+        isActive: true
+      },
+      {
+        text: 'Projects',
+        url: '/projects',
+        isActive: false
+      },
+      {
+        text: 'Governance Templates',
+        url: '/governance-templates',
+        isActive: false
       }
     ])
   })

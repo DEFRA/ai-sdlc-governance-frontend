@@ -9,7 +9,7 @@ globs: *.js
 - TypeScript (for type checking only)
 
 ## Tech Stack
-- Node.js + Hapi.js
+- Node.js + Hapi.js (do NOT use Express)
 - govuk-frontend npm library
 - Nunjucks templates npm library
 - Webpack + Babel

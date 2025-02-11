@@ -11,11 +11,6 @@ const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
 const isDevelopment = process.env.NODE_ENV === 'development'
 
-const apiServer =
-  process.env.NODE_ENV === 'development'
-    ? 'http://localhost:3001'
-    : process.env.REACT_APP_API_SERVER
-
 export const config = convict({
   serviceVersion: {
     doc: 'The service version, this variable is injected into your docker container in CDP environments',
@@ -222,9 +217,13 @@ export const config = convict({
     }
   },
   apiServer: {
-    doc: 'API server URL',
+    doc: 'The base URL of the API server',
     format: String,
-    default: apiServer
+    default:
+      process.env.NODE_ENV === 'development'
+        ? 'http://localhost:3001'
+        : process.env.API_SERVER,
+    env: 'API_SERVER'
   }
 })
 
