@@ -6,27 +6,41 @@
 <div class="govuk-width-container">
   <main class="govuk-main-wrapper" id="main-content" role="main">
     <div class="govuk-grid-row">
-      <div class="govuk-grid-column-two-thirds">
+      <div class="govuk-grid-column-full">
         <h1 class="govuk-heading-xl">Governance Templates</h1>
         
-        <div class="govuk-body">
-          {% if templates and templates.length %}
-            <ul class="govuk-list">
+        {% if templates and templates.length %}
+          <table class="govuk-table">
+            <thead class="govuk-table__head">
+              <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Template Name</th>
+                <th scope="col" class="govuk-table__header">Version</th>
+                <th scope="col" class="govuk-table__header">Description</th>
+              </tr>
+            </thead>
+            <tbody class="govuk-table__body">
               {% for template in templates %}
-                <li>
-                  <h2 class="govuk-heading-m">
+                <tr class="govuk-table__row">
+                  <td class="govuk-table__cell">
                     <a href="/governance-templates/{{ template.id }}" class="govuk-link">{{ template.name }}</a>
-                  </h2>
-                  {% if template.description %}
-                    <p class="govuk-body">{{ template.description }}</p>
-                  {% endif %}
-                </li>
+                  </td>
+                  <td class="govuk-table__cell">
+                    <strong class="govuk-tag">{{ template.version }}</strong>
+                  </td>
+                  <td class="govuk-table__cell">
+                    {% if template.description %}
+                      {{ template.description }}
+                    {% else %}
+                      <span class="govuk-hint">No description available</span>
+                    {% endif %}
+                  </td>
+                </tr>
               {% endfor %}
-            </ul>
-          {% else %}
-            <p>No governance templates found.</p>
-          {% endif %}
-        </div>
+            </tbody>
+          </table>
+        {% else %}
+          <p class="govuk-body">No governance templates found.</p>
+        {% endif %}
       </div>
     </div>
   </main>
