@@ -1,6 +1,7 @@
 {% extends "layouts/page.njk" %}
 
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
 
 {% block pageTitle %}{{ pageTitle }} - Defra AI Code Review{% endblock %}
 
@@ -42,26 +43,36 @@
           }) }}
 
           {% if workflow.checklistItemTemplates and workflow.checklistItemTemplates.length > 0 %}
-            <ul class="govuk-list govuk-list--bullet">
-              {% for item in workflow.checklistItemTemplates %}
-                <li>
-                  <h3 class="govuk-heading-m">{{ item.name }}</h3>
-                  {% if item.description %}
-                    <p class="govuk-body">{{ item.description }}</p>
-                  {% endif %}
-                  {% if item.config %}
-                    <ul class="govuk-list govuk-list--bullet govuk-!-margin-left-4">
-                      {% if item.config.requiresApproval %}
-                        <li>Requires approval</li>
-                      {% endif %}
-                      {% if item.config.requiresFileUpload %}
-                        <li>Requires file upload</li>
-                      {% endif %}
-                    </ul>
-                  {% endif %}
-                </li>
-              {% endfor %}
-            </ul>
+            {% set tableRows = [] %}
+            {% for item in workflow.checklistItemTemplates %}
+              {% set row = [
+                {
+                  text: item.itemKey,
+                  classes: "govuk-!-font-weight-bold"
+                },
+                {
+                  text: item.name
+                },
+                {
+                  text: item.type if item.type else "Not specified"
+                },
+                {
+                  text: item.description if item.description else "No description provided"
+                }
+              ] %}
+              {% set tableRows = (tableRows.push(row), tableRows) %}
+            {% endfor %}
+
+            {{ govukTable({
+              firstCellIsHeader: true,
+              head: [
+                { text: "Key" },
+                { text: "Name" },
+                { text: "Type" },
+                { text: "Description" }
+              ],
+              rows: tableRows
+            }) }}
           {% else %}
             <p class="govuk-body">No checklist items defined for this workflow.</p>
           {% endif %}
