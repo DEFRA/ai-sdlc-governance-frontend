@@ -1,0 +1,147 @@
+{% extends "layouts/page.njk" %}
+
+{% from "govuk/components/input/macro.njk" import govukInput %}
+{% from "govuk/components/textarea/macro.njk" import govukTextarea %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+
+{% block pageTitle %}{{ pageTitle }} - Defra AI Code Review{% endblock %}
+
+{% block content %}
+<div class="govuk-width-container">
+  <main class="govuk-main-wrapper" id="main-content" role="main">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+        <a href="/workflow-templates/{{ workflowTemplateId }}" class="govuk-back-link">Back to workflow</a>
+
+        {% if error %}
+          {{ govukErrorSummary({
+            titleText: "There is a problem",
+            errorList: [
+              {
+                text: error,
+                href: "#name"
+              }
+            ]
+          }) }}
+        {% endif %}
+
+        <h1 class="govuk-heading-xl">Create New Checklist Item Template</h1>
+        
+        {% if workflow %}
+          <p class="govuk-body">Adding checklist item to workflow: {{ workflow.name }}</p>
+        {% endif %}
+
+        <form method="POST" action="/governance-templates/{{ governanceTemplateId }}/workflows/{{ workflowTemplateId }}/checklist-items" novalidate>
+          {{ govukInput({
+            label: {
+              text: "Item Key",
+              classes: "govuk-label--m"
+            },
+            hint: {
+              text: "A unique identifier for this checklist item"
+            },
+            id: "itemKey",
+            name: "itemKey",
+            value: values.itemKey if values else "",
+            errorMessage: {
+              text: "Enter an item key"
+            } if error,
+            attributes: {
+              "data-testid": "item-key"
+            }
+          }) }}
+
+          {{ govukInput({
+            label: {
+              text: "Item Name",
+              classes: "govuk-label--m"
+            },
+            id: "name",
+            name: "name",
+            value: values.name if values else "",
+            errorMessage: {
+              text: "Enter an item name"
+            } if error,
+            attributes: {
+              "data-testid": "item-name"
+            }
+          }) }}
+
+          {{ govukTextarea({
+            label: {
+              text: "Description",
+              classes: "govuk-label--m"
+            },
+            id: "description",
+            name: "description",
+            value: values.description if values else "",
+            attributes: {
+              "data-testid": "item-description"
+            }
+          }) }}
+
+          {{ govukRadios({
+            idPrefix: "type",
+            name: "type",
+            fieldset: {
+              legend: {
+                text: "Item Type",
+                classes: "govuk-fieldset__legend--m"
+              }
+            },
+            items: [
+              {
+                value: "approval",
+                text: "Approval",
+                checked: values.type === "approval" if values else false
+              },
+              {
+                value: "document",
+                text: "Document",
+                checked: values.type === "document" if values else false
+              },
+              {
+                value: "task",
+                text: "Task",
+                checked: values.type === "task" if values else true
+              }
+            ]
+          }) }}
+
+          {{ govukCheckboxes({
+            name: "requiresApproval",
+            items: [
+              {
+                value: "on",
+                text: "Requires Approval",
+                checked: values.requiresApproval if values else false
+              }
+            ]
+          }) }}
+
+          {{ govukCheckboxes({
+            name: "requiresFileUpload",
+            items: [
+              {
+                value: "on",
+                text: "Requires File Upload",
+                checked: values.requiresFileUpload if values else false
+              }
+            ]
+          }) }}
+
+          {{ govukButton({
+            text: "Create checklist item",
+            attributes: {
+              "data-testid": "submit-button"
+            }
+          }) }}
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %} 

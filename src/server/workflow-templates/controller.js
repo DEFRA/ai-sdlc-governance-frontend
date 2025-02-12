@@ -66,7 +66,9 @@ export const workflowTemplatesController = {
   async detail(request, h) {
     try {
       const { id } = request.params
-      const response = await fetch(
+
+      // Fetch workflow template details
+      const workflowResponse = await fetch(
         `${config.get('apiServer')}/api/v1/workflow-templates/${id}`,
         {
           method: 'GET',
@@ -76,11 +78,37 @@ export const workflowTemplatesController = {
         }
       )
 
-      if (!response.ok) {
-        throw new Error(`API call failed with status: ${response.status}`)
+      if (!workflowResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${workflowResponse.status}`
+        )
       }
 
-      const workflow = await response.json()
+      const workflow = await workflowResponse.json()
+
+      // Fetch associated checklist items
+      const checklistItemsResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/checklist-item-templates?workflowTemplateId=${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!checklistItemsResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${checklistItemsResponse.status}`
+        )
+      }
+
+      const checklistItems = await checklistItemsResponse.json()
+      workflow.checklistItemTemplates = checklistItems
+
+      request.logger.info(
+        `Found ${checklistItems.length} checklist items for workflow template ${id}`
+      )
 
       return h.view('workflow-templates/views/detail', {
         pageTitle: workflow.name,

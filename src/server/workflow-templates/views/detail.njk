@@ -1,5 +1,7 @@
 {% extends "layouts/page.njk" %}
 
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
 {% block pageTitle %}{{ pageTitle }} - Defra AI Code Review{% endblock %}
 
 {% block content %}
@@ -28,14 +30,34 @@
             {% endif %}
           </dl>
 
+          <h2 class="govuk-heading-l">Checklist Items</h2>
+
+          {{ govukButton({
+            text: "Add new checklist item",
+            href: "/governance-templates/" + workflow.governanceTemplateId + "/workflows/" + workflow._id + "/checklist-items/new",
+            classes: "govuk-button--secondary",
+            attributes: {
+              "data-testid": "add-checklist-item-button"
+            }
+          }) }}
+
           {% if workflow.checklistItemTemplates and workflow.checklistItemTemplates.length > 0 %}
-            <h2 class="govuk-heading-l">Checklist Items</h2>
             <ul class="govuk-list govuk-list--bullet">
               {% for item in workflow.checklistItemTemplates %}
                 <li>
                   <h3 class="govuk-heading-m">{{ item.name }}</h3>
                   {% if item.description %}
                     <p class="govuk-body">{{ item.description }}</p>
+                  {% endif %}
+                  {% if item.config %}
+                    <ul class="govuk-list govuk-list--bullet govuk-!-margin-left-4">
+                      {% if item.config.requiresApproval %}
+                        <li>Requires approval</li>
+                      {% endif %}
+                      {% if item.config.requiresFileUpload %}
+                        <li>Requires file upload</li>
+                      {% endif %}
+                    </ul>
                   {% endif %}
                 </li>
               {% endfor %}
