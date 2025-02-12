@@ -1,5 +1,7 @@
 {% extends "layouts/page.njk" %}
 
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
 {% block pageTitle %}{{ pageTitle }} - Defra AI Code Review{% endblock %}
 
 {% block content %}
@@ -32,18 +34,42 @@
             {% endif %}
           </dl>
 
+          <h2 class="govuk-heading-l">Associated Workflows</h2>
+
+          {{ govukButton({
+            text: "Add new workflow",
+            href: "/governance-templates/" + template._id + "/workflows/new",
+            classes: "govuk-button--secondary",
+            attributes: {
+              "data-testid": "add-workflow-button"
+            }
+          }) }}
+
           {% if template.workflowTemplates and template.workflowTemplates.length > 0 %}
-            <h2 class="govuk-heading-l">Associated Workflows</h2>
-            <ul class="govuk-list govuk-list--bullet">
-              {% for workflow in template.workflowTemplates %}
-                <li>
-                  <h3 class="govuk-heading-m">{{ workflow.name }}</h3>
-                  {% if workflow.description %}
-                    <p class="govuk-body">{{ workflow.description }}</p>
-                  {% endif %}
-                </li>
-              {% endfor %}
-            </ul>
+            <table class="govuk-table">
+              <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                  <th scope="col" class="govuk-table__header">Workflow Name</th>
+                  <th scope="col" class="govuk-table__header">Description</th>
+                </tr>
+              </thead>
+              <tbody class="govuk-table__body">
+                {% for workflow in template.workflowTemplates %}
+                  <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">
+                      <a href="/workflow-templates/{{ workflow._id }}" class="govuk-link">{{ workflow.name }}</a>
+                    </td>
+                    <td class="govuk-table__cell">
+                      {% if workflow.description %}
+                        {{ workflow.description }}
+                      {% else %}
+                        <span class="govuk-hint">No description available</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           {% else %}
             <p class="govuk-body">No workflows associated with this template.</p>
           {% endif %}

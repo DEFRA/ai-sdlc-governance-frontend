@@ -77,7 +77,9 @@ export const governanceTemplatesController = {
   async detail(request, h) {
     try {
       const { id } = request.params
-      const response = await fetch(
+
+      // First get the governance template
+      const templateResponse = await fetch(
         `${config.get('apiServer')}/api/v1/governance-templates/${id}`,
         {
           method: 'GET',
@@ -87,18 +89,44 @@ export const governanceTemplatesController = {
         }
       )
 
-      if (!response.ok) {
-        throw new Error(`API call failed with status: ${response.status}`)
+      if (!templateResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${templateResponse.status}`
+        )
       }
 
-      const template = await response.json()
+      const template = await templateResponse.json()
+
+      // Then get associated workflow templates
+      const workflowsResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/workflow-templates?governanceTemplateId=${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!workflowsResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${workflowsResponse.status}`
+        )
+      }
+
+      const workflowTemplates = await workflowsResponse.json()
+      template.workflowTemplates = workflowTemplates
+
+      request.logger.info(
+        `Found ${workflowTemplates.length} workflow templates for governance template ${id}`
+      )
 
       return h.view('governance-templates/views/detail', {
         pageTitle: `${template.name} (${template.version})`,
         template
       })
     } catch (error) {
-      request.logger.error(error)
+      request.logger.error('Error loading governance template:', error)
       return h.view('governance-templates/views/detail', {
         pageTitle: 'Template Not Found',
         error: 'Unable to load governance template'
