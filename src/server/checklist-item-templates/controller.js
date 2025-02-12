@@ -36,25 +36,11 @@ export const checklistItemTemplatesController = {
   async create(request, h) {
     try {
       const { workflowTemplateId } = request.params
-      const {
-        itemKey,
-        name,
-        description,
-        requiresApproval,
-        requiresFileUpload
-      } = request.payload
+      const { itemKey, name, description, type } = request.payload
 
       request.logger.info(
         `Creating checklist item template for workflow ${workflowTemplateId}`
       )
-
-      // Set the type based on requirements
-      const itemType =
-        requiresApproval === 'on'
-          ? 'approval'
-          : requiresFileUpload === 'on'
-            ? 'document'
-            : 'task'
 
       const apiUrl = `${config.get('apiServer')}/api/v1/checklist-item-templates`
       const requestBody = {
@@ -62,14 +48,10 @@ export const checklistItemTemplatesController = {
         itemKey,
         name,
         description,
-        type: itemType,
+        type,
         dependencies: {
           requires: [], // Will be populated when dependencies feature is implemented
           requiredBy: [] // Will be populated when dependencies feature is implemented
-        },
-        metadata: {
-          requiresApproval: requiresApproval === 'on',
-          requiresFileUpload: requiresFileUpload === 'on'
         }
       }
 

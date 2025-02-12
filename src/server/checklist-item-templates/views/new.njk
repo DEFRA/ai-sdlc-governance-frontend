@@ -111,28 +111,6 @@
             ]
           }) }}
 
-          {{ govukCheckboxes({
-            name: "requiresApproval",
-            items: [
-              {
-                value: "on",
-                text: "Requires Approval",
-                checked: values.requiresApproval if values else false
-              }
-            ]
-          }) }}
-
-          {{ govukCheckboxes({
-            name: "requiresFileUpload",
-            items: [
-              {
-                value: "on",
-                text: "Requires File Upload",
-                checked: values.requiresFileUpload if values else false
-              }
-            ]
-          }) }}
-
           {{ govukButton({
             text: "Create checklist item",
             attributes: {
