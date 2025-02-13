@@ -36,7 +36,13 @@ export const checklistItemTemplatesController = {
   async create(request, h) {
     try {
       const { workflowTemplateId } = request.params
-      const { itemKey, name, description, type } = request.payload
+      const {
+        itemKey,
+        name,
+        description,
+        type,
+        dependenciesRequires = []
+      } = request.payload
 
       request.logger.info(
         `Creating checklist item template for workflow ${workflowTemplateId}`
@@ -52,7 +58,7 @@ export const checklistItemTemplatesController = {
         config: {
           required: true
         },
-        dependencies: []
+        dependencies_requires: dependenciesRequires
       }
 
       request.logger.info(
@@ -138,7 +144,12 @@ export const checklistItemTemplatesController = {
 
   async update(request, h) {
     const { id } = request.params
-    const { name, description, type } = request.payload
+    const {
+      name,
+      description,
+      type,
+      dependenciesRequires = []
+    } = request.payload
 
     try {
       request.logger.info(`Updating checklist item template ${id}`)
@@ -147,7 +158,8 @@ export const checklistItemTemplatesController = {
       const requestBody = {
         name,
         description,
-        type
+        type,
+        dependencies_requires: dependenciesRequires
       }
 
       request.logger.info(

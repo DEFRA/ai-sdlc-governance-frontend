@@ -123,13 +123,34 @@
               {
                 value: "true",
                 text: "Required",
-                checked: checklistItem.config.required if checklistItem.config else true
+                checked: true
               }
             ]
           }) }}
 
+          {% if workflow.checklistItemTemplates and workflow.checklistItemTemplates.length > 0 %}
+            {{ govukCheckboxes({
+              idPrefix: "dependencies",
+              name: "dependenciesRequires",
+              fieldset: {
+                legend: {
+                  text: "Dependencies",
+                  classes: "govuk-fieldset__legend--m"
+                }
+              },
+              hint: {
+                text: "Select the checklist items that must be completed before this item can be started"
+              },
+              items: workflow.checklistItemTemplates | map(item => ({
+                value: item._id,
+                text: item.name + " (" + item.itemKey + ")",
+                checked: checklistItem.dependencies_requires and item._id in checklistItem.dependencies_requires
+              })) | filter(item => item.value !== checklistItem._id)
+            }) }}
+          {% endif %}
+
           {{ govukButton({
-            text: "Save changes",
+            text: "Update checklist item",
             attributes: {
               "data-testid": "submit-button"
             }
