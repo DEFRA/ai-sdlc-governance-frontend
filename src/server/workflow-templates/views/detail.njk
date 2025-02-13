@@ -47,7 +47,7 @@
             {% for item in workflow.checklistItemTemplates %}
               {% set row = [
                 {
-                  text: item.itemKey,
+                  html: "<a href='/checklist-item-templates/" + item._id + "' class='govuk-link' data-testid='checklist-item-link'>" + item.itemKey + "</a>",
                   classes: "govuk-!-font-weight-bold"
                 },
                 {

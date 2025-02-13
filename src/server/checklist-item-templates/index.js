@@ -29,6 +29,28 @@ export const checklistItemTemplates = {
             description: 'Create new checklist item template',
             auth: false
           }
+        },
+        {
+          method: 'GET',
+          path: '/checklist-item-templates/{id}',
+          handler: checklistItemTemplatesController.detail.bind(
+            checklistItemTemplatesController
+          ),
+          options: {
+            description: 'View checklist item template details',
+            auth: false
+          }
+        },
+        {
+          method: ['POST', 'PUT'],
+          path: '/checklist-item-templates/{id}',
+          handler: checklistItemTemplatesController.update.bind(
+            checklistItemTemplatesController
+          ),
+          options: {
+            description: 'Update checklist item template',
+            auth: false
+          }
         }
       ])
     }
