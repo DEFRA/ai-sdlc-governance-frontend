@@ -111,6 +111,24 @@
             ]
           }) }}
 
+          {{ govukCheckboxes({
+            idPrefix: "config",
+            name: "config[required]",
+            fieldset: {
+              legend: {
+                text: "Configuration",
+                classes: "govuk-fieldset__legend--m"
+              }
+            },
+            items: [
+              {
+                value: "true",
+                text: "Required",
+                checked: true
+              }
+            ]
+          }) }}
+
           {{ govukButton({
             text: "Create checklist item",
             attributes: {

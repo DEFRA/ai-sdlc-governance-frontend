@@ -49,10 +49,10 @@ export const checklistItemTemplatesController = {
         name,
         description,
         type,
-        dependencies: {
-          requires: [], // Will be populated when dependencies feature is implemented
-          requiredBy: [] // Will be populated when dependencies feature is implemented
-        }
+        config: {
+          required: true
+        },
+        dependencies: []
       }
 
       request.logger.info(
