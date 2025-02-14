@@ -29,6 +29,28 @@ export const checklistItemTemplates = {
             description: 'Update checklist item template',
             auth: false
           }
+        },
+        {
+          method: 'GET',
+          path: '/governance-templates/{governanceTemplateId}/workflows/{workflowTemplateId}/checklist-items/new',
+          handler: checklistItemTemplatesController.new.bind(
+            checklistItemTemplatesController
+          ),
+          options: {
+            description: 'New checklist item template form',
+            auth: false
+          }
+        },
+        {
+          method: 'POST',
+          path: '/governance-templates/{governanceTemplateId}/workflows/{workflowTemplateId}/checklist-items',
+          handler: checklistItemTemplatesController.create.bind(
+            checklistItemTemplatesController
+          ),
+          options: {
+            description: 'Create new checklist item template',
+            auth: false
+          }
         }
       ])
     }

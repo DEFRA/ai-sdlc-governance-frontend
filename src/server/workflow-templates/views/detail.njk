@@ -45,19 +45,38 @@
           {% if workflow.checklistItemTemplates and workflow.checklistItemTemplates.length > 0 %}
             {% set tableRows = [] %}
             {% for item in workflow.checklistItemTemplates %}
+              {% set dependenciesRequires = [] %}
+              {% for dep in item.dependencies_requires %}
+                {% for depItem in workflow.checklistItemTemplates %}
+                  {% if depItem._id == dep %}
+                    {% set dependenciesRequires = (dependenciesRequires.push(depItem.name), dependenciesRequires) %}
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
+
+              {% set dependenciesRequiredBy = [] %}
+              {% for depItem in workflow.checklistItemTemplates %}
+                {% if item._id in depItem.dependencies_requires %}
+                  {% set dependenciesRequiredBy = (dependenciesRequiredBy.push(depItem.name), dependenciesRequiredBy) %}
+                {% endif %}
+              {% endfor %}
+
               {% set row = [
                 {
-                  html: "<a href='/checklist-item-templates/" + item._id + "' class='govuk-link' data-testid='checklist-item-link'>" + item.itemKey + "</a>",
+                  html: "<a href='/checklist-item-templates/" + item._id + "' class='govuk-link' data-testid='checklist-item-link'>" + item.name + "</a>",
                   classes: "govuk-!-font-weight-bold"
-                },
-                {
-                  text: item.name
                 },
                 {
                   text: item.type if item.type else "Not specified"
                 },
                 {
                   text: item.description if item.description else "No description provided"
+                },
+                {
+                  text: dependenciesRequires | join(", ") if dependenciesRequires.length else "None"
+                },
+                {
+                  text: dependenciesRequiredBy | join(", ") if dependenciesRequiredBy.length else "None"
                 }
               ] %}
               {% set tableRows = (tableRows.push(row), tableRows) %}
@@ -66,10 +85,11 @@
             {{ govukTable({
               firstCellIsHeader: true,
               head: [
-                { text: "Key" },
                 { text: "Name" },
                 { text: "Type" },
-                { text: "Description" }
+                { text: "Description" },
+                { text: "Requires" },
+                { text: "Required By" }
               ],
               rows: tableRows
             }) }}
