@@ -10,28 +10,6 @@ export const checklistItemTemplates = {
       server.route([
         {
           method: 'GET',
-          path: '/governance-templates/{governanceTemplateId}/workflows/{workflowTemplateId}/checklist-items/new',
-          handler: checklistItemTemplatesController.new.bind(
-            checklistItemTemplatesController
-          ),
-          options: {
-            description: 'Create new checklist item template',
-            auth: false
-          }
-        },
-        {
-          method: 'POST',
-          path: '/governance-templates/{governanceTemplateId}/workflows/{workflowTemplateId}/checklist-items',
-          handler: checklistItemTemplatesController.create.bind(
-            checklistItemTemplatesController
-          ),
-          options: {
-            description: 'Create new checklist item template',
-            auth: false
-          }
-        },
-        {
-          method: 'GET',
           path: '/checklist-item-templates/{id}',
           handler: checklistItemTemplatesController.detail.bind(
             checklistItemTemplatesController
