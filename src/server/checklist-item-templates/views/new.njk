@@ -5,10 +5,12 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 
 {% block pageTitle %}{{ pageTitle }} - Defra AI Code Review{% endblock %}
 
 {% block content %}
+{% set value = value or { name: "", description: "", type: "", dependenciesRequires: [] } %}
 <div class="govuk-width-container">
   <main class="govuk-main-wrapper" id="main-content" role="main">
     <div class="govuk-grid-row">
@@ -41,10 +43,8 @@
             },
             id: "name",
             name: "name",
-            value: "",
-            errorMessage: {
-              text: "Enter an item name"
-            } if error,
+            value: value.name,
+            errorMessage: { text: "Enter an item name" } if error else undefined,
             attributes: {
               "data-testid": "item-name"
             }
@@ -57,7 +57,7 @@
             },
             id: "description",
             name: "description",
-            value: "",
+            value: value.description,
             attributes: {
               "data-testid": "item-description"
             }
@@ -66,6 +66,7 @@
           {{ govukRadios({
             idPrefix: "type",
             name: "type",
+            value: value.type,
             fieldset: {
               legend: {
                 text: "Item Type",
@@ -88,6 +89,33 @@
             ]
           }) }}
 
+          {% if availableDependencies and availableDependencies.length > 0 %}
+            {% set dependencyItems = [] %}
+            {% for item in availableDependencies %}
+              {% set dependencyItems = dependencyItems.concat([{
+                value: item._id,
+                text: item.name + " (from workflow: " + item.workflowName + ")",
+                checked: value.dependenciesRequires and item._id in value.dependenciesRequires
+              }]) %}
+            {% endfor %}
+
+            <div class="govuk-form-group govuk-!-margin-bottom-6">
+              {{ govukCheckboxes({
+                name: "dependenciesRequires",
+                fieldset: {
+                  legend: {
+                    text: "Dependencies",
+                    classes: "govuk-fieldset__legend--m"
+                  }
+                },
+                hint: {
+                  text: "Select the checklist items that must be completed before this item can be started"
+                },
+                items: dependencyItems
+              }) }}
+            </div>
+          {% endif %}
+
           {{ govukButton({
             text: "Create checklist item",
             attributes: {
@@ -100,6 +128,9 @@
         {% if workflow %}
           <!-- Debug: Workflow ID: {{ workflow._id }} -->
           <!-- Debug: Workflow Name: {{ workflow.name }} -->
+          <!-- Debug: Available Dependencies Count: {{ availableDependencies | length }} -->
+          <!-- Debug: Dependencies: {{ availableDependencies | dump }} -->
+          <!-- Debug: Value: {{ value | dump }} -->
         {% else %}
           <!-- Debug: No workflow data available -->
         {% endif %}

@@ -16,10 +16,11 @@ export const checklistItemTemplatesController = {
       }
 
       const checklistItem = await checklistItemResponse.json()
+      const workflowTemplateId = checklistItem.workflowTemplateId
 
       // Fetch workflow template details
       const workflowResponse = await fetch(
-        `${config.get('apiServer')}/api/v1/workflow-templates/${checklistItem.workflowTemplateId}`
+        `${config.get('apiServer')}/api/v1/workflow-templates/${workflowTemplateId}`
       )
 
       if (!workflowResponse.ok) {
@@ -28,18 +29,41 @@ export const checklistItemTemplatesController = {
 
       const workflow = await workflowResponse.json()
 
+      // Fetch all checklist items for dependencies
+      const checklistItemsApiUrl = `${config.get('apiServer')}/api/v1/checklist-item-templates?governanceTemplateId=${workflow.governanceTemplateId}`
+      const checklistItemsResponse = await fetch(checklistItemsApiUrl)
+
+      if (!checklistItemsResponse.ok) {
+        throw new Error('Failed to fetch checklist items')
+      }
+
+      const allChecklistItems = await checklistItemsResponse.json()
+
+      // Add workflow names to all checklist items
+      const availableDependencies = allChecklistItems
+        .filter((item) => item?.workflowTemplateId)
+        .map((item) => ({
+          _id: item._id,
+          name: item.name || 'Unnamed Item',
+          workflowName: workflow.name
+        }))
+
       return h.view('checklist-item-templates/views/detail', {
         pageTitle: 'Edit Checklist Item Template',
         checklistItem,
         workflow,
-        workflowTemplateId: workflow._id
+        workflowTemplateId,
+        governanceTemplateId: workflow.governanceTemplateId,
+        availableDependencies
       })
     } catch (error) {
       request.logger.error('Error fetching checklist item template:', error)
       return h.view('checklist-item-templates/views/detail', {
         pageTitle: 'Edit Checklist Item Template',
         error:
-          'Unable to load checklist item template details. Please try again.'
+          'Unable to load checklist item template details. Please try again.',
+        checklistItem: { _id: id },
+        availableDependencies: []
       })
     }
   },
@@ -56,12 +80,41 @@ export const checklistItemTemplatesController = {
     try {
       request.logger.info(`Updating checklist item template ${id}`)
 
+      // First get the checklist item to get the workflow ID
+      const checklistItemResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`
+      )
+
+      if (!checklistItemResponse.ok) {
+        throw new Error('Failed to fetch checklist item template')
+      }
+
+      const checklistItem = await checklistItemResponse.json()
+      const workflowTemplateId = checklistItem.workflowTemplateId
+
+      // Get the workflow to get the governance template ID
+      const workflowResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/workflow-templates/${workflowTemplateId}`
+      )
+
+      if (!workflowResponse.ok) {
+        throw new Error('Failed to fetch workflow template')
+      }
+
+      const workflow = await workflowResponse.json()
+
+      // Now update the checklist item
       const apiUrl = `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`
       const requestBody = {
+        workflowTemplateId: workflow._id,
         name,
         description,
         type,
-        dependencies_requires: dependenciesRequires
+        dependencies_requires: Array.isArray(dependenciesRequires)
+          ? dependenciesRequires
+          : dependenciesRequires
+            ? [dependenciesRequires]
+            : []
       }
 
       request.logger.info(
@@ -90,15 +143,7 @@ export const checklistItemTemplatesController = {
         `Successfully updated checklist item template with ID: ${updatedItem._id}`
       )
 
-      // Fetch workflow ID to redirect back to workflow page
-      const checklistItemResponse = await fetch(
-        `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`
-      )
-      const checklistItem = await checklistItemResponse.json()
-
-      return h.redirect(
-        `/workflow-templates/${checklistItem.workflowTemplateId}`
-      )
+      return h.redirect(`/workflow-templates/${workflowTemplateId}`)
     } catch (error) {
       request.logger.error('Error updating checklist item template:', error)
       return h.view('checklist-item-templates/views/detail', {
@@ -108,7 +153,13 @@ export const checklistItemTemplatesController = {
           name: request.payload.name || '',
           description: request.payload.description || '',
           type: request.payload.type || '',
-          dependenciesRequires: request.payload.dependenciesRequires || []
+          dependenciesRequires: Array.isArray(
+            request.payload.dependenciesRequires
+          )
+            ? request.payload.dependenciesRequires
+            : request.payload.dependenciesRequires
+              ? [request.payload.dependenciesRequires]
+              : []
         },
         checklistItem: { _id: id }
       })
@@ -123,9 +174,10 @@ export const checklistItemTemplatesController = {
     })
 
     try {
-      // Fetch workflow template details to get available dependencies
-      request.logger.info('Fetching workflow template:', {
-        workflowTemplateId
+      // Fetch current workflow template details
+      request.logger.info('Fetching current workflow template:', {
+        workflowTemplateId,
+        apiUrl: `${config.get('apiServer')}/api/v1/workflow-templates/${workflowTemplateId}`
       })
       const workflowResponse = await fetch(
         `${config.get('apiServer')}/api/v1/workflow-templates/${workflowTemplateId}`
@@ -136,27 +188,85 @@ export const checklistItemTemplatesController = {
       }
 
       const workflow = await workflowResponse.json()
-      request.logger.info('Received workflow template:', {
+      request.logger.info('Received current workflow template:', {
         workflowId: workflow._id,
-        workflowName: workflow.name
+        workflowName: workflow.name,
+        workflow: JSON.stringify(workflow)
       })
 
-      // Fetch existing checklist items for dependencies
-      request.logger.info('Fetching checklist items for workflow:', {
-        workflowTemplateId
+      // Fetch all workflows in the governance template
+      const workflowsApiUrl = `${config.get('apiServer')}/api/v1/workflow-templates?governanceTemplateId=${governanceTemplateId}`
+      request.logger.info('Fetching all workflows for governance template:', {
+        governanceTemplateId,
+        apiUrl: workflowsApiUrl
       })
-      const checklistItemsResponse = await fetch(
-        `${config.get('apiServer')}/api/v1/checklist-item-templates?workflowTemplateId=${workflowTemplateId}`
-      )
+      const allWorkflowsResponse = await fetch(workflowsApiUrl)
 
-      if (!checklistItemsResponse.ok) {
-        throw new Error('Failed to fetch existing checklist items')
+      if (!allWorkflowsResponse.ok) {
+        throw new Error('Failed to fetch workflows')
       }
 
-      const checklistItems = await checklistItemsResponse.json()
-      workflow.checklistItemTemplates = checklistItems
-      request.logger.info('Received checklist items:', {
-        count: checklistItems.length
+      const allWorkflows = await allWorkflowsResponse.json()
+      request.logger.info('Received all workflows:', {
+        count: allWorkflows.length,
+        workflows: JSON.stringify(
+          allWorkflows.map((w) => ({ id: w._id, name: w.name }))
+        )
+      })
+
+      // Create a map of workflow IDs to names for quick lookup
+      const workflowMap = {}
+      allWorkflows.forEach((w) => {
+        if (w?._id && w.name) {
+          workflowMap[w._id] = w.name
+        }
+      })
+
+      request.logger.info('Created workflow map:', {
+        workflowMap: JSON.stringify(workflowMap)
+      })
+
+      // Fetch all checklist items from the governance template for dependencies
+      const checklistItemsApiUrl = `${config.get('apiServer')}/api/v1/checklist-item-templates?governanceTemplateId=${governanceTemplateId}`
+      request.logger.info(
+        'Fetching all checklist items for governance template:',
+        {
+          governanceTemplateId,
+          apiUrl: checklistItemsApiUrl
+        }
+      )
+      const checklistItemsResponse = await fetch(checklistItemsApiUrl)
+
+      if (!checklistItemsResponse.ok) {
+        throw new Error('Failed to fetch checklist items')
+      }
+
+      const allChecklistItems = await checklistItemsResponse.json()
+      request.logger.info('Received all checklist items:', {
+        count: allChecklistItems.length,
+        items: JSON.stringify(
+          allChecklistItems.map((item) => ({
+            id: item._id,
+            name: item.name,
+            workflowId: item.workflowTemplateId
+          }))
+        )
+      })
+
+      // Add workflow names to all checklist items
+      const availableDependencies = allChecklistItems
+        .filter((item) => item?.workflowTemplateId)
+        .map((item) => ({
+          _id: item._id,
+          name: item.name || 'Unnamed Item',
+          workflowName:
+            workflowMap[item.workflowTemplateId] || 'Unknown Workflow'
+        }))
+
+      request.logger.info('Available dependencies:', {
+        count: availableDependencies.length,
+        currentWorkflowId: workflowTemplateId,
+        dependencies: JSON.stringify(availableDependencies)
       })
 
       const templateData = {
@@ -164,6 +274,7 @@ export const checklistItemTemplatesController = {
         workflow,
         workflowTemplateId,
         governanceTemplateId,
+        availableDependencies,
         value: {
           name: '',
           description: '',
@@ -177,8 +288,10 @@ export const checklistItemTemplatesController = {
         workflowId: workflow._id,
         workflowName: workflow.name,
         value: templateData.value,
-        checklistItemsCount: checklistItems.length
+        availableDependenciesCount: availableDependencies.length,
+        templateData: JSON.stringify(templateData)
       })
+
       return h.view('checklist-item-templates/views/new', templateData)
     } catch (error) {
       request.logger.error('Error loading new checklist item form:', error)
@@ -194,14 +307,17 @@ export const checklistItemTemplatesController = {
         },
         workflow: null,
         workflowTemplateId,
-        governanceTemplateId
+        governanceTemplateId,
+        availableDependencies: []
       }
 
       request.logger.info('Rendering error template with data:', {
         pageTitle: errorTemplateData.pageTitle,
         error: errorTemplateData.error,
-        value: errorTemplateData.value
+        value: errorTemplateData.value,
+        templateData: JSON.stringify(errorTemplateData)
       })
+
       return h.view('checklist-item-templates/views/new', errorTemplateData)
     }
   },
@@ -226,7 +342,9 @@ export const checklistItemTemplatesController = {
         name,
         description,
         type,
-        dependencies_requires: dependenciesRequires
+        dependencies_requires: Array.isArray(dependenciesRequires)
+          ? dependenciesRequires
+          : [dependenciesRequires].filter(Boolean)
       }
 
       request.logger.info(
@@ -271,7 +389,15 @@ export const checklistItemTemplatesController = {
           `${config.get('apiServer')}/api/v1/checklist-item-templates?workflowTemplateId=${workflowTemplateId}`
         )
         const checklistItems = await checklistItemsResponse.json()
-        workflow.checklistItemTemplates = checklistItems
+
+        // Add workflow names to checklist items
+        const availableDependencies = checklistItems
+          .filter((item) => item?.workflowTemplateId)
+          .map((item) => ({
+            _id: item._id,
+            name: item.name || 'Unnamed Item',
+            workflowName: workflow.name
+          }))
 
         return h.view('checklist-item-templates/views/new', {
           pageTitle: 'Create New Checklist Item',
@@ -280,11 +406,16 @@ export const checklistItemTemplatesController = {
             name: request.payload.name || '',
             description: request.payload.description || '',
             type: request.payload.type || '',
-            dependenciesRequires: request.payload.dependenciesRequires || []
+            dependenciesRequires: Array.isArray(
+              request.payload.dependenciesRequires
+            )
+              ? request.payload.dependenciesRequires
+              : [request.payload.dependenciesRequires].filter(Boolean)
           },
           workflow,
           workflowTemplateId,
-          governanceTemplateId
+          governanceTemplateId,
+          availableDependencies
         })
       } catch (fetchError) {
         // If we can't fetch the workflow details, throw to central error handler

@@ -10,7 +10,7 @@ export const checklistItemTemplates = {
       server.route([
         {
           method: 'GET',
-          path: '/checklist-item-templates/{id}',
+          path: '/checklist-items/{id}',
           handler: checklistItemTemplatesController.detail.bind(
             checklistItemTemplatesController
           ),
@@ -21,7 +21,7 @@ export const checklistItemTemplates = {
         },
         {
           method: ['POST', 'PUT'],
-          path: '/checklist-item-templates/{id}',
+          path: '/checklist-items/{id}',
           handler: checklistItemTemplatesController.update.bind(
             checklistItemTemplatesController
           ),
