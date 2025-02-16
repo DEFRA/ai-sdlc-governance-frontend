@@ -152,6 +152,8 @@
                 if (!data.success) {
                   throw new Error('Update failed');
                 }
+                // Reload the page to show updated dependencies
+                window.location.reload();
               })
               .catch(error => {
                 console.error('Error:', error);
