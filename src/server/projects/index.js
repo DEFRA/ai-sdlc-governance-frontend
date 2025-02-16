@@ -34,6 +34,15 @@ export const projects = {
             description: 'Create new project',
             auth: false
           }
+        },
+        {
+          method: 'GET',
+          path: '/projects/{id}',
+          handler: projectsController.detail.bind(projectsController),
+          options: {
+            description: 'View project details',
+            auth: false
+          }
         }
       ])
     }
