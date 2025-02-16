@@ -16,6 +16,11 @@ export const checklistItemTemplatesController = {
       }
 
       const checklistItem = await checklistItemResponse.json()
+      request.logger.info('Fetched checklist item:', {
+        id: checklistItem._id,
+        name: checklistItem.name,
+        dependencies: checklistItem.dependencies_requires
+      })
       const workflowTemplateId = checklistItem.workflowTemplateId
 
       // Fetch workflow template details
@@ -38,6 +43,14 @@ export const checklistItemTemplatesController = {
       }
 
       const allChecklistItems = await checklistItemsResponse.json()
+      request.logger.info('Available dependencies:', {
+        count: allChecklistItems.length,
+        items: allChecklistItems.map((item) => ({
+          id: item._id,
+          name: item.name,
+          workflowId: item.workflowTemplateId
+        }))
+      })
 
       // Add workflow names to all checklist items
       const availableDependencies = allChecklistItems
@@ -48,13 +61,35 @@ export const checklistItemTemplatesController = {
           workflowName: workflow.name
         }))
 
+      request.logger.info('Template data:', {
+        checklistItemId: checklistItem._id,
+        dependencies: checklistItem.dependencies_requires,
+        availableDependenciesCount: availableDependencies.length,
+        value: {
+          name: checklistItem.name,
+          description: checklistItem.description,
+          type: checklistItem.type,
+          dependenciesRequires: (checklistItem.dependencies_requires || []).map(
+            (dep) => dep._id || dep
+          )
+        }
+      })
+
       return h.view('checklist-item-templates/views/detail', {
         pageTitle: 'Edit Checklist Item Template',
         checklistItem,
         workflow,
         workflowTemplateId,
         governanceTemplateId: workflow.governanceTemplateId,
-        availableDependencies
+        availableDependencies,
+        value: {
+          name: checklistItem.name,
+          description: checklistItem.description,
+          type: checklistItem.type,
+          dependenciesRequires: (checklistItem.dependencies_requires || []).map(
+            (dep) => dep._id || dep
+          )
+        }
       })
     } catch (error) {
       request.logger.error('Error fetching checklist item template:', error)
@@ -63,7 +98,13 @@ export const checklistItemTemplatesController = {
         error:
           'Unable to load checklist item template details. Please try again.',
         checklistItem: { _id: id },
-        availableDependencies: []
+        availableDependencies: [],
+        value: {
+          name: '',
+          description: '',
+          type: '',
+          dependenciesRequires: []
+        }
       })
     }
   },
@@ -76,6 +117,7 @@ export const checklistItemTemplatesController = {
       type,
       dependenciesRequires = []
     } = request.payload
+    let workflowTemplateId
 
     try {
       request.logger.info(`Updating checklist item template ${id}`)
@@ -90,79 +132,97 @@ export const checklistItemTemplatesController = {
       }
 
       const checklistItem = await checklistItemResponse.json()
-      const workflowTemplateId = checklistItem.workflowTemplateId
+      workflowTemplateId = checklistItem.workflowTemplateId
 
-      // Get the workflow to get the governance template ID
-      const workflowResponse = await fetch(
-        `${config.get('apiServer')}/api/v1/workflow-templates/${workflowTemplateId}`
+      // Make the update API call
+      const updateResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name,
+            description,
+            type,
+            dependencies_requires: dependenciesRequires
+          })
+        }
       )
 
-      if (!workflowResponse.ok) {
-        throw new Error('Failed to fetch workflow template')
+      if (!updateResponse.ok) {
+        throw new Error('Failed to update checklist item template')
       }
 
-      const workflow = await workflowResponse.json()
-
-      // Now update the checklist item
-      const apiUrl = `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`
-      const requestBody = {
-        workflowTemplateId: workflow._id,
-        name,
-        description,
-        type,
-        dependencies_requires: Array.isArray(dependenciesRequires)
-          ? dependenciesRequires
-          : dependenciesRequires
-            ? [dependenciesRequires]
-            : []
-      }
-
-      request.logger.info(
-        `Making PUT request to ${apiUrl} with body:`,
-        requestBody
-      )
-
-      const response = await fetch(apiUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        request.logger.error(
-          `API call failed with status: ${response.status}, body: ${errorText}`
-        )
-        throw new Error(`API call failed with status: ${response.status}`)
-      }
-
-      const updatedItem = await response.json()
-      request.logger.info(
-        `Successfully updated checklist item template with ID: ${updatedItem._id}`
-      )
-
+      // Redirect back to the workflow template page
       return h.redirect(`/workflow-templates/${workflowTemplateId}`)
     } catch (error) {
       request.logger.error('Error updating checklist item template:', error)
-      return h.view('checklist-item-templates/views/detail', {
-        pageTitle: 'Edit Checklist Item Template',
-        error: 'Unable to update checklist item template. Please try again.',
-        value: {
-          name: request.payload.name || '',
-          description: request.payload.description || '',
-          type: request.payload.type || '',
-          dependenciesRequires: Array.isArray(
-            request.payload.dependenciesRequires
-          )
-            ? request.payload.dependenciesRequires
-            : request.payload.dependenciesRequires
-              ? [request.payload.dependenciesRequires]
-              : []
-        },
-        checklistItem: { _id: id }
-      })
+
+      // Fetch workflow and dependencies again for error case
+      try {
+        // Get the workflow to get the governance template ID
+        const workflowResponse = await fetch(
+          `${config.get('apiServer')}/api/v1/workflow-templates/${workflowTemplateId}`
+        )
+        const workflow = await workflowResponse.json()
+
+        // Fetch all checklist items for dependencies
+        const checklistItemsApiUrl = `${config.get('apiServer')}/api/v1/checklist-item-templates?governanceTemplateId=${workflow.governanceTemplateId}`
+        const checklistItemsResponse = await fetch(checklistItemsApiUrl)
+        const allChecklistItems = await checklistItemsResponse.json()
+
+        // Add workflow names to all checklist items
+        const availableDependencies = allChecklistItems
+          .filter((item) => item?.workflowTemplateId)
+          .map((item) => ({
+            _id: item._id,
+            name: item.name || 'Unnamed Item',
+            workflowName: workflow.name
+          }))
+
+        return h.view('checklist-item-templates/views/detail', {
+          pageTitle: 'Edit Checklist Item Template',
+          error: 'Unable to update checklist item template. Please try again.',
+          workflow,
+          workflowTemplateId,
+          checklistItem: { _id: id },
+          availableDependencies,
+          value: {
+            name: request.payload.name || '',
+            description: request.payload.description || '',
+            type: request.payload.type || '',
+            dependenciesRequires: Array.isArray(
+              request.payload.dependenciesRequires
+            )
+              ? request.payload.dependenciesRequires
+              : request.payload.dependenciesRequires
+                ? [request.payload.dependenciesRequires]
+                : []
+          }
+        })
+      } catch (fetchError) {
+        request.logger.error('Error fetching dependencies:', fetchError)
+        return h.view('checklist-item-templates/views/detail', {
+          pageTitle: 'Edit Checklist Item Template',
+          error: 'Unable to update checklist item template. Please try again.',
+          value: {
+            name: request.payload.name || '',
+            description: request.payload.description || '',
+            type: request.payload.type || '',
+            dependenciesRequires: Array.isArray(
+              request.payload.dependenciesRequires
+            )
+              ? request.payload.dependenciesRequires
+              : request.payload.dependenciesRequires
+                ? [request.payload.dependenciesRequires]
+                : []
+          },
+          checklistItem: { _id: id },
+          availableDependencies: []
+        })
+      }
     }
   },
 
@@ -342,14 +402,17 @@ export const checklistItemTemplatesController = {
         name,
         description,
         type,
-        dependencies_requires: Array.isArray(dependenciesRequires)
+        dependencies_requires: (Array.isArray(dependenciesRequires)
           ? dependenciesRequires
-          : [dependenciesRequires].filter(Boolean)
+          : [dependenciesRequires]
+        )
+          .filter(Boolean)
+          .map((dep) => (typeof dep === 'object' ? dep._id : dep))
       }
 
       request.logger.info(
         `Making POST request to ${apiUrl} with body:`,
-        requestBody
+        JSON.stringify(requestBody)
       )
 
       const response = await fetch(apiUrl, {

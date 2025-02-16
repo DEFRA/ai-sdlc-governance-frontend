@@ -47,17 +47,25 @@
             {% for item in workflow.checklistItemTemplates %}
               {% set dependenciesRequires = [] %}
               {% for dep in item.dependencies_requires %}
-                {% for depItem in workflow.checklistItemTemplates %}
-                  {% if depItem._id == dep %}
-                    {% set dependenciesRequires = (dependenciesRequires.push(depItem.name), dependenciesRequires) %}
-                  {% endif %}
-                {% endfor %}
+                {% if dep._id %}
+                  {% set dependenciesRequires = (dependenciesRequires.push(dep.name), dependenciesRequires) %}
+                {% else %}
+                  {% for depItem in workflow.checklistItemTemplates %}
+                    {% if depItem._id == dep %}
+                      {% set dependenciesRequires = (dependenciesRequires.push(depItem.name), dependenciesRequires) %}
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
               {% endfor %}
 
               {% set dependenciesRequiredBy = [] %}
               {% for depItem in workflow.checklistItemTemplates %}
-                {% if item._id in depItem.dependencies_requires %}
-                  {% set dependenciesRequiredBy = (dependenciesRequiredBy.push(depItem.name), dependenciesRequiredBy) %}
+                {% if depItem.dependencies_requires %}
+                  {% for dep in depItem.dependencies_requires %}
+                    {% if (dep._id and dep._id == item._id) or dep == item._id %}
+                      {% set dependenciesRequiredBy = (dependenciesRequiredBy.push(depItem.name), dependenciesRequiredBy) %}
+                    {% endif %}
+                  {% endfor %}
                 {% endif %}
               {% endfor %}
 

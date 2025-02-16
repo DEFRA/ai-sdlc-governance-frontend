@@ -10,12 +10,11 @@
 {% block pageTitle %}{{ pageTitle }} - Defra AI Code Review{% endblock %}
 
 {% block content %}
-{% set value = value or { name: checklistItem.name, description: checklistItem.description, type: checklistItem.type, dependenciesRequires: checklistItem.dependencies_requires } %}
 <div class="govuk-width-container">
   <main class="govuk-main-wrapper" id="main-content" role="main">
     <div class="govuk-grid-row">
       <div class="govuk-grid-column-two-thirds">
-        <a href="/governance-templates/{{ governanceTemplateId }}/workflows/{{ workflowTemplateId }}" class="govuk-back-link">Back to workflow</a>
+        <a href="/workflow-templates/{{ workflowTemplateId }}" class="govuk-back-link">Back to workflow</a>
 
         {% if error %}
           {{ govukErrorSummary({
@@ -92,28 +91,32 @@
           {% if availableDependencies and availableDependencies.length > 0 %}
             {% set dependencyItems = [] %}
             {% for item in availableDependencies %}
-              {% set dependencyItems = dependencyItems.concat([{
-                value: item._id,
-                text: item.name + " (from workflow: " + item.workflowName + ")",
-                checked: value.dependenciesRequires and item._id in value.dependenciesRequires
-              }]) %}
+              {% if item._id != checklistItem._id %}
+                {% set dependencyItems = dependencyItems.concat([{
+                  value: item._id,
+                  text: item.name + " (from workflow: " + item.workflowName + ")",
+                  checked: value.dependenciesRequires and (item._id | string in value.dependenciesRequires)
+                }]) %}
+              {% endif %}
             {% endfor %}
 
-            <div class="govuk-form-group govuk-!-margin-bottom-6">
-              {{ govukCheckboxes({
-                name: "dependenciesRequires",
-                fieldset: {
-                  legend: {
-                    text: "Dependencies",
-                    classes: "govuk-fieldset__legend--m"
-                  }
-                },
-                hint: {
-                  text: "Select the checklist items that must be completed before this item can be started"
-                },
-                items: dependencyItems
-              }) }}
-            </div>
+            {% if dependencyItems.length > 0 %}
+              <div class="govuk-form-group govuk-!-margin-bottom-6">
+                {{ govukCheckboxes({
+                  name: "dependenciesRequires",
+                  fieldset: {
+                    legend: {
+                      text: "Dependencies",
+                      classes: "govuk-fieldset__legend--m"
+                    }
+                  },
+                  hint: {
+                    text: "Select the checklist items that must be completed before this item can be started"
+                  },
+                  items: dependencyItems
+                }) }}
+              </div>
+            {% endif %}
           {% endif %}
 
           {{ govukButton({

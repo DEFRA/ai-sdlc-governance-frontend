@@ -95,7 +95,7 @@
               {% set dependencyItems = dependencyItems.concat([{
                 value: item._id,
                 text: item.name + " (from workflow: " + item.workflowName + ")",
-                checked: value.dependenciesRequires and item._id in value.dependenciesRequires
+                checked: value.dependenciesRequires and (item._id | string in value.dependenciesRequires)
               }]) %}
             {% endfor %}
 
