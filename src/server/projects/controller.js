@@ -293,5 +293,42 @@ export const projectsController = {
         error: 'Unable to load project details'
       })
     }
+  },
+
+  async updateChecklistStatus(request, h) {
+    try {
+      const { id } = request.params
+      const { status } = request.payload
+
+      request.logger.info(`Updating checklist item ${id} status to ${status}`)
+
+      const response = await fetch(
+        `${config.get('apiServer')}/api/v1/checklist-item-instances/${id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          },
+          body: JSON.stringify({ status })
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        request.logger.error('API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        })
+        throw new Error(`API call failed with status: ${response.status}`)
+      }
+
+      // Only return success status, not the full response
+      return h.response({ success: true }).code(200)
+    } catch (error) {
+      request.logger.error('Error updating checklist item status:', error)
+      return h.response({ error: 'Unable to update status' }).code(500)
+    }
   }
 }

@@ -43,6 +43,16 @@ export const projects = {
             description: 'View project details',
             auth: false
           }
+        },
+        {
+          method: 'POST',
+          path: '/checklist-item-instances/{id}/status',
+          handler:
+            projectsController.updateChecklistStatus.bind(projectsController),
+          options: {
+            description: 'Update checklist item status',
+            auth: false
+          }
         }
       ])
     }

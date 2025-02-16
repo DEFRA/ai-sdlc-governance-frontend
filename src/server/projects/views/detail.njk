@@ -1,8 +1,7 @@
 {% extends "layouts/page.njk" %}
 
 {% from "govuk/components/button/macro.njk" import govukButton %}
-{% from "govuk/components/table/macro.njk" import govukTable %}
-{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 
 {% block pageTitle %}{{ pageTitle }} - Defra AI Code Review{% endblock %}
@@ -27,94 +26,84 @@
         {% endif %}
 
         {% if project %}
-          <h1 class="govuk-heading-xl">{{ project.name }}</h1>
-
-          <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row">
-              <dt class="govuk-summary-list__key">Governance Template</dt>
-              <dd class="govuk-summary-list__value">
-                {{ project.governanceTemplate.name }} (v{{ project.governanceTemplate.version }})
-              </dd>
-            </div>
-            {% if project.description %}
-              <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Description</dt>
-                <dd class="govuk-summary-list__value">{{ project.description }}</dd>
-              </div>
-            {% endif %}
-          </dl>
+          <h1 class="govuk-heading-xl">Project: {{ project.name }}</h1>
+          <p class="govuk-body-l">{{ project.governanceTemplate.name }} - v{{ project.governanceTemplate.version }}</p>
 
           {% if project.workflowInstances and project.workflowInstances.length > 0 %}
             {% for workflow in project.workflowInstances %}
               <div class="govuk-!-margin-bottom-9">
                 <h2 class="govuk-heading-l">{{ workflow.name }}</h2>
-                
-                {% if workflow.description %}
-                  <p class="govuk-body">{{ workflow.description }}</p>
-                {% endif %}
 
                 {% if workflow.checklistItems and workflow.checklistItems.length > 0 %}
-                  {% set tableRows = [] %}
-                  {% for item in workflow.checklistItems %}
-                    {% set statusHtml %}
-                      <form method="POST" action="/checklist-item-instances/{{ item._id }}/status" class="govuk-!-margin-bottom-0">
-                        {{ govukRadios({
-                          classes: "govuk-radios--small govuk-radios--inline",
-                          name: "status",
-                          value: item.status,
-                          items: [
-                            {
-                              value: "incomplete",
-                              text: "Incomplete",
-                              checked: item.status == "incomplete"
-                            },
-                            {
-                              value: "complete",
-                              text: "Complete",
-                              checked: item.status == "complete"
-                            },
-                            {
-                              value: "not_required",
-                              text: "Not Required",
-                              checked: item.status == "not_required"
-                            }
-                          ],
-                          attributes: {
-                            "data-testid": "status-radio-" + item._id,
-                            "onchange": "this.form.submit()"
-                          }
-                        }) }}
-                      </form>
-                    {% endset %}
+                  <div class="checklist-items">
+                    {% for item in workflow.checklistItems %}
+                      <div class="checklist-item govuk-!-margin-bottom-4">
+                        <div class="govuk-checkboxes govuk-checkboxes--small">
+                          <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" 
+                                   id="status-{{ item._id }}" 
+                                   name="status" 
+                                   type="checkbox" 
+                                   value="complete"
+                                   {% if item.status == "complete" %}checked{% endif %}
+                                   data-testid="status-checkbox-{{ item._id }}"
+                                   data-item-id="{{ item._id }}"
+                                   onchange="handleStatusChange(this)">
+                            <label class="govuk-label govuk-checkboxes__label" for="status-{{ item._id }}">
+                              {{ item.name }}
+                            </label>
+                          </div>
+                        </div>
 
-                    {% set row = [
-                      {
-                        text: item.name,
-                        classes: "govuk-!-font-weight-bold"
-                      },
-                      {
-                        text: item.type | title if item.type else "Not specified"
-                      },
-                      {
-                        text: item.description if item.description else "No description provided"
-                      },
-                      {
-                        html: statusHtml
-                      }
-                    ] %}
-                    {% set tableRows = (tableRows.push(row), tableRows) %}
-                  {% endfor %}
+                        {% if item.type == "document" %}
+                          <div class="govuk-!-margin-left-7">
+                            {% if item.documentUrl %}
+                              <a href="{{ item.documentUrl }}" class="govuk-link govuk-!-margin-right-2">{{ item.documentName }}</a>
+                              <span class="govuk-body-s">({{ item.uploadedAt | date }})</span>
+                            {% else %}
+                              {{ govukButton({
+                                text: "Generate",
+                                href: "/checklist-item-instances/" + item._id + "/generate",
+                                classes: "govuk-button--secondary govuk-!-margin-bottom-0 govuk-!-margin-left-2",
+                                attributes: {
+                                  "data-testid": "generate-button-" + item._id
+                                }
+                              }) }}
+                            {% endif %}
+                          </div>
+                        {% endif %}
 
-                  {{ govukTable({
-                    firstCellIsHeader: true,
-                    head: [
-                      { text: "Name" },
-                      { text: "Type" },
-                      { text: "Description" },
-                      { text: "Status" }
-                    ],
-                    rows: tableRows
-                  }) }}
+                        {% if item.type == "approval" %}
+                          <div class="govuk-!-margin-left-7">
+                            {% if item.approvalStatus %}
+                              <span class="govuk-body-s">Approved by {{ item.approvedBy }} on {{ item.approvedAt | date }}</span>
+                            {% else %}
+                              {{ govukButton({
+                                text: "Upload Approval",
+                                href: "/checklist-item-instances/" + item._id + "/upload",
+                                classes: "govuk-button--secondary govuk-!-margin-bottom-0 govuk-!-margin-left-2",
+                                attributes: {
+                                  "data-testid": "upload-button-" + item._id
+                                }
+                              }) }}
+                            {% endif %}
+                          </div>
+                        {% endif %}
+
+                        {% if item.dependencies_requires and item.dependencies_requires.length > 0 %}
+                          <div class="govuk-!-margin-left-7">
+                            <p class="govuk-body-s govuk-!-margin-bottom-0">
+                              {% if item.dependencies_requires | length == 1 %}
+                                <span class="govuk-hint">Requires: {{ item.dependencies_requires[0].name }}</span>
+                              {% else %}
+                                <span class="govuk-hint">Requires: {{ item.dependencies_requires | map(attribute='name') | join(', ') }}</span>
+                              {% endif %}
+                            </p>
+                          </div>
+                        {% endif %}
+                      </div>
+                    {% endfor %}
+                  </div>
                 {% else %}
                   <p class="govuk-body">No checklist items found for this workflow.</p>
                 {% endif %}
@@ -125,43 +114,49 @@
           {% endif %}
 
           <script>
-            // Handle status updates via AJAX
-            document.addEventListener('submit', function(e) {
-              if (e.target.action.includes('/checklist-item-instances/')) {
-                e.preventDefault();
-                const form = e.target;
-                const formData = new FormData(form);
-                
-                fetch(form.action, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(Object.fromEntries(formData))
-                })
-                .then(response => {
-                  if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                  }
-                  // Optionally show success message
-                })
-                .catch(error => {
-                  console.error('Error:', error);
-                  // Show error message to user
-                  const errorDiv = document.createElement('div');
-                  errorDiv.className = 'govuk-error-summary';
-                  errorDiv.innerHTML = `
-                    <div role="alert">
-                      <h2 class="govuk-error-summary__title">There is a problem</h2>
-                      <div class="govuk-error-summary__body">
-                        <p>Unable to update status. Please try again.</p>
-                      </div>
+            function handleStatusChange(checkbox) {
+              const itemId = checkbox.dataset.itemId;
+              const status = checkbox.checked ? 'complete' : 'incomplete';
+              
+              fetch(`/checklist-item-instances/${itemId}/status`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Accept: 'application/json'
+                },
+                body: JSON.stringify({ status })
+              })
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error('Network response was not ok');
+                }
+                return response.json();
+              })
+              .then(data => {
+                if (!data.success) {
+                  throw new Error('Update failed');
+                }
+              })
+              .catch(error => {
+                console.error('Error:', error);
+                // Revert checkbox state
+                checkbox.checked = !checkbox.checked;
+                // Show error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'govuk-error-summary';
+                errorDiv.innerHTML = `
+                  <div role="alert">
+                    <h2 class="govuk-error-summary__title">There is a problem</h2>
+                    <div class="govuk-error-summary__body">
+                      <p>Unable to update status. Please try again.</p>
                     </div>
-                  `;
-                  form.parentNode.insertBefore(errorDiv, form);
-                });
-              }
-            });
+                  </div>
+                `;
+                checkbox.closest('.checklist-item').insertBefore(errorDiv, checkbox.closest('.govuk-checkboxes'));
+                // Remove error message after 5 seconds
+                setTimeout(() => errorDiv.remove(), 5000);
+              });
+            }
           </script>
         {% endif %}
       </div>
