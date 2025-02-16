@@ -132,5 +132,80 @@ export const governanceTemplatesController = {
         error: 'Unable to load governance template'
       })
     }
+  },
+
+  async diagram(request, h) {
+    try {
+      const { id } = request.params
+
+      // Fetch governance template details
+      const templateResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/governance-templates/${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!templateResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${templateResponse.status}`
+        )
+      }
+
+      const template = await templateResponse.json()
+
+      // Fetch all workflows for this template
+      const workflowsResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/workflow-templates?governanceTemplateId=${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!workflowsResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${workflowsResponse.status}`
+        )
+      }
+
+      const workflows = await workflowsResponse.json()
+      template.workflowTemplates = workflows
+
+      // Fetch checklist items for each workflow
+      for (const workflow of template.workflowTemplates) {
+        const checklistItemsResponse = await fetch(
+          `${config.get('apiServer')}/api/v1/checklist-item-templates?workflowTemplateId=${workflow._id}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+
+        if (checklistItemsResponse.ok) {
+          workflow.checklistItemTemplates = await checklistItemsResponse.json()
+        } else {
+          workflow.checklistItemTemplates = []
+        }
+      }
+
+      return h.view('governance-templates/views/diagram', {
+        pageTitle: `${template.name} Dependencies`,
+        template
+      })
+    } catch (error) {
+      request.logger.error(error)
+      return h.view('governance-templates/views/diagram', {
+        pageTitle: 'Governance Template Not Found',
+        error: 'Unable to load governance template'
+      })
+    }
   }
 }

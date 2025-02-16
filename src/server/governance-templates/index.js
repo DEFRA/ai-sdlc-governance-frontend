@@ -51,6 +51,17 @@ export const governanceTemplates = {
             description: 'View governance template details',
             auth: false
           }
+        },
+        {
+          method: 'GET',
+          path: '/governance-templates/{id}/diagram',
+          handler: governanceTemplatesController.diagram.bind(
+            governanceTemplatesController
+          ),
+          options: {
+            description: 'View governance template dependencies diagram',
+            auth: false
+          }
         }
       ])
     }

@@ -1,0 +1,107 @@
+{% extends "layouts/page.njk" %}
+
+{% block pageTitle %}{{ workflow.name }} Dependencies - Defra AI Code Review{% endblock %}
+
+{% block content %}
+<div class="govuk-width-container">
+  <main class="govuk-main-wrapper" id="main-content" role="main">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-full">
+        <a href="/workflow-templates/{{ workflow._id }}" class="govuk-back-link">Back to workflow</a>
+
+        <h1 class="govuk-heading-xl">{{ workflow.name }} - Dependencies Diagram</h1>
+
+        <div class="diagram-container govuk-body">
+          <pre class="mermaid">
+            %%{init: {'flowchart': {'nodeSpacing': 50, 'rankSpacing': 100, 'htmlLabels': true, 'defaultRenderer': 'elk'}} }%%
+            graph RL
+            
+            %% Define all nodes first to ensure proper ordering
+            {% for item in workflow.checklistItemTemplates %}
+              {{ item._id }}["{{ item.name }}"]:::default
+            {% endfor %}
+            {% for dep in workflow.checklistItemTemplates %}
+              {% for depItem in dep.dependencies_requires %}
+                {% if depItem._id %}
+                  {{ depItem._id }}["{{ depItem.name }}"]:::default
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+
+            %% Create external workflow swimlanes first (will appear at top)
+            {% for extWorkflow in externalWorkflows %}
+              subgraph {{ extWorkflow._id }}[{{ extWorkflow.name }}]
+                {% for item in workflow.checklistItemTemplates %}
+                  {% for dep in item.dependencies_requires %}
+                    {% if dep._id and dep.workflowTemplateId == extWorkflow._id %}
+                      {{ dep._id }}
+                    {% endif %}
+                  {% endfor %}
+                {% endfor %}
+              end
+            {% endfor %}
+
+            %% Group items by current workflow (will appear at bottom)
+            subgraph {{ workflow._id }}[{{ workflow.name }}]
+              {% for item in workflow.checklistItemTemplates %}
+                {{ item._id }}
+              {% endfor %}
+            end
+
+            %% Add all dependencies after subgraphs
+            {% for item in workflow.checklistItemTemplates %}
+              {% for dep in item.dependencies_requires %}
+                {% if dep._id %}
+                  {{ dep._id }} --> {{ item._id }}
+                {% else %}
+                  {% for depItem in workflow.checklistItemTemplates %}
+                    {% if depItem._id == dep %}
+                      {{ depItem._id }} --> {{ item._id }}
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+            
+            classDef default fill:#f8f8f8,stroke:#505a5f,stroke-width:2px,rx:4,ry:4;
+            classDef subgraphStyle fill:#ffffff,stroke:#1d70b8,stroke-width:2px;
+            linkStyle default stroke:#1d70b8,stroke-width:2px;
+            class {{ workflow._id }} subgraphStyle;
+            {% for extWorkflow in externalWorkflows %}
+            class {{ extWorkflow._id }} subgraphStyle;
+            {% endfor %}
+          </pre>
+        </div>
+
+        <style>
+          .diagram-container {
+            background: white;
+            padding: 20px;
+            border: 1px solid #b1b4b6;
+            margin: 30px 0;
+            overflow-x: auto;
+          }
+          .mermaid {
+            text-align: center;
+            min-width: 800px;
+          }
+        </style>
+
+        <script src="/public/assets/javascripts/mermaid.min.js"></script>
+        <script>
+          mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+              useMaxWidth: false,
+              htmlLabels: true,
+              curve: 'basis'
+            }
+          });
+        </script>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %} 

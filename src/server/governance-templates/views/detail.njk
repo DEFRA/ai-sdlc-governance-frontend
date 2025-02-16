@@ -45,6 +45,16 @@
             }
           }) }}
 
+          {{ govukButton({
+            text: "View Dependencies Diagram",
+            href: "/governance-templates/" + template._id + "/diagram",
+            classes: "govuk-button--secondary",
+            attributes: {
+              "data-testid": "view-diagram-button"
+            }
+          }) }}
+
+
           {% if template.workflowTemplates and template.workflowTemplates.length > 0 %}
             <table class="govuk-table">
               <thead class="govuk-table__head">

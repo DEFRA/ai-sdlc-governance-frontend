@@ -121,5 +121,97 @@ export const workflowTemplatesController = {
         error: 'Unable to load workflow template'
       })
     }
+  },
+
+  async diagram(request, h) {
+    try {
+      const { id } = request.params
+
+      // Fetch workflow template details
+      const workflowResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/workflow-templates/${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!workflowResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${workflowResponse.status}`
+        )
+      }
+
+      const workflow = await workflowResponse.json()
+
+      // Fetch associated checklist items
+      const checklistItemsResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/checklist-item-templates?workflowTemplateId=${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!checklistItemsResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${checklistItemsResponse.status}`
+        )
+      }
+
+      const checklistItems = await checklistItemsResponse.json()
+      workflow.checklistItemTemplates = checklistItems
+
+      // Get unique external workflow IDs from dependencies
+      const externalWorkflowIds = new Set()
+      checklistItems.forEach((item) => {
+        if (item.dependencies_requires) {
+          item.dependencies_requires.forEach((dep) => {
+            if (
+              dep._id &&
+              dep.workflowTemplateId &&
+              dep.workflowTemplateId !== id
+            ) {
+              externalWorkflowIds.add(dep.workflowTemplateId)
+            }
+          })
+        }
+      })
+
+      // Fetch external workflow details
+      const externalWorkflows = []
+      for (const workflowId of externalWorkflowIds) {
+        const externalWorkflowResponse = await fetch(
+          `${config.get('apiServer')}/api/v1/workflow-templates/${workflowId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+
+        if (externalWorkflowResponse.ok) {
+          const externalWorkflow = await externalWorkflowResponse.json()
+          externalWorkflows.push(externalWorkflow)
+        }
+      }
+
+      return h.view('workflow-templates/views/diagram', {
+        pageTitle: `${workflow.name} Dependencies`,
+        workflow,
+        externalWorkflows
+      })
+    } catch (error) {
+      request.logger.error(error)
+      return h.view('workflow-templates/views/diagram', {
+        pageTitle: 'Workflow Template Not Found',
+        error: 'Unable to load workflow template'
+      })
+    }
   }
 }

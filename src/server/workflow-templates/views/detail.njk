@@ -42,6 +42,15 @@
             }
           }) }}
 
+          {{ govukButton({
+            text: "View Dependencies Diagram",
+            href: "/governance-templates/" + workflow.governanceTemplateId + "/workflows/" + workflow._id + "/diagram",
+            classes: "govuk-button--secondary",
+            attributes: {
+              "data-testid": "view-diagram-button"
+            }
+          }) }}
+
           {% if workflow.checklistItemTemplates and workflow.checklistItemTemplates.length > 0 %}
             {% set tableRows = [] %}
             {% for item in workflow.checklistItemTemplates %}

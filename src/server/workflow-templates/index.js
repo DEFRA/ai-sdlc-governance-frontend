@@ -40,6 +40,17 @@ export const workflowTemplates = {
             description: 'View workflow template details',
             auth: false
           }
+        },
+        {
+          method: 'GET',
+          path: '/governance-templates/{governanceTemplateId}/workflows/{id}/diagram',
+          handler: workflowTemplatesController.diagram.bind(
+            workflowTemplatesController
+          ),
+          options: {
+            description: 'View workflow dependencies diagram',
+            auth: false
+          }
         }
       ])
     }
