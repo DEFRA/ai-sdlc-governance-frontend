@@ -14,7 +14,7 @@
         <div class="diagram-container govuk-body">
           <pre class="mermaid">
             %%{init: {'flowchart': {'nodeSpacing': 50, 'rankSpacing': 100, 'htmlLabels': true, 'defaultRenderer': 'elk'}} }%%
-            graph RL
+            graph LR
             
             %% Define all nodes first to ensure proper ordering
             {% for item in workflow.checklistItemTemplates %}
