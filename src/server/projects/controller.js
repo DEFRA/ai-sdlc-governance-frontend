@@ -152,7 +152,7 @@ export const projectsController = {
       }
 
       const project = await response.json()
-      return h.redirect(`/projects/${project._id}`)
+      return h.response(project).code(200)
     } catch (error) {
       request.logger.error('Error creating project:', {
         error: error.message,
