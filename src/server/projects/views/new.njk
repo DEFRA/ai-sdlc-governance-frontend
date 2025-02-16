@@ -1,0 +1,186 @@
+{% extends "layouts/page.njk" %}
+
+{% from "govuk/components/input/macro.njk" import govukInput %}
+{% from "govuk/components/textarea/macro.njk" import govukTextarea %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/select/macro.njk" import govukSelect %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+
+{% block pageTitle %}{{ pageTitle }} - Defra AI Code Review{% endblock %}
+
+{% block content %}
+<div class="govuk-width-container">
+  <main class="govuk-main-wrapper" id="main-content" role="main">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+        <a href="/projects" class="govuk-back-link">Back to projects</a>
+
+        {% if error %}
+          {{ govukErrorSummary({
+            titleText: "There is a problem",
+            errorList: [
+              {
+                text: error,
+                href: "#name"
+              }
+            ]
+          }) }}
+        {% endif %}
+
+        <h1 class="govuk-heading-xl">Create New Project</h1>
+
+        <form method="POST" action="/projects" novalidate onsubmit="return validateForm(event)">
+          {{ govukInput({
+            label: {
+              text: "Project Name",
+              classes: "govuk-label--m"
+            },
+            id: "name",
+            name: "name",
+            value: values.name if values else "",
+            errorMessage: {
+              text: "Enter a project name"
+            } if error,
+            attributes: {
+              "data-testid": "project-name",
+              "required": "required",
+              "aria-required": "true"
+            }
+          }) }}
+
+          {{ govukTextarea({
+            label: {
+              text: "Description",
+              classes: "govuk-label--m"
+            },
+            id: "description",
+            name: "description",
+            value: values.description if values else "",
+            attributes: {
+              "data-testid": "project-description"
+            }
+          }) }}
+
+          {% if governanceTemplates and governanceTemplates.length > 0 %}
+            {% set templateItems = [{
+              value: "",
+              text: "Select a template"
+            }] %}
+            {% for template in governanceTemplates %}
+              {% set _ = templateItems.push({
+                value: template._id,
+                text: template.name + " (v" + template.version + ")",
+                selected: values.governanceTemplateId == template._id
+              }) %}
+            {% endfor %}
+
+            {{ govukSelect({
+              id: "governanceTemplateId",
+              name: "governanceTemplateId",
+              label: {
+                text: "Governance Template",
+                classes: "govuk-label--m"
+              },
+              items: templateItems,
+              errorMessage: {
+                text: "Select a governance template"
+              } if error,
+              attributes: {
+                "data-testid": "governance-template-select",
+                "onchange": "handleTemplateChange(this.value)"
+              }
+            }) }}
+          {% endif %}
+
+          {% if workflows and workflows.length > 0 %}
+            {% set workflowItems = [] %}
+            {% for workflow in workflows %}
+              {% set workflowItems = workflowItems.concat([{
+                value: workflow._id,
+                text: workflow.name,
+                checked: values.selectedWorkflowTemplateIds and (workflow._id | string in values.selectedWorkflowTemplateIds)
+              }]) %}
+            {% endfor %}
+
+            <div class="govuk-form-group govuk-!-margin-bottom-6">
+              {{ govukCheckboxes({
+                name: "selectedWorkflowTemplateIds",
+                idPrefix: "selectedWorkflowTemplateIds",
+                fieldset: {
+                  legend: {
+                    text: "Select Workflows",
+                    classes: "govuk-fieldset__legend--m"
+                  }
+                },
+                hint: {
+                  text: "Select the workflows to include in this project"
+                },
+                items: workflowItems,
+                attributes: {
+                  "data-testid": "workflow-checkboxes"
+                }
+              }) }}
+            </div>
+          {% endif %}
+
+          {{ govukButton({
+            text: "Create project",
+            attributes: {
+              "data-testid": "submit-button"
+            }
+          }) }}
+        </form>
+
+        <script>
+          function validateForm(event) {
+            const nameField = document.getElementById('name');
+            if (!nameField.value.trim()) {
+              event.preventDefault();
+              const errorSummary = document.createElement('div');
+              errorSummary.className = 'govuk-error-summary';
+              errorSummary.setAttribute('data-module', 'govuk-error-summary');
+              errorSummary.innerHTML = `
+                <div role="alert">
+                  <h2 class="govuk-error-summary__title">There is a problem</h2>
+                  <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                      <li>
+                        <a href="#name">Enter a project name</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>`;
+              const form = document.querySelector('form');
+              form.parentNode.insertBefore(errorSummary, form);
+              nameField.closest('.govuk-form-group').classList.add('govuk-form-group--error');
+              nameField.classList.add('govuk-input--error');
+              nameField.focus();
+              return false;
+            }
+            return true;
+          }
+
+          function handleTemplateChange(governanceTemplateId) {
+            const name = document.getElementById('name').value;
+            const description = document.getElementById('description').value;
+            const params = new URLSearchParams();
+            
+            if (governanceTemplateId) {
+              params.append('governanceTemplateId', governanceTemplateId);
+            }
+            if (name) {
+              params.append('name', name);
+            }
+            if (description) {
+              params.append('description', description);
+            }
+
+            window.location.href = `/projects/new${params.toString() ? '?' + params.toString() : ''}`;
+          }
+        </script>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %} 

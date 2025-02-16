@@ -16,6 +16,24 @@ export const projects = {
             description: 'List all projects',
             auth: false
           }
+        },
+        {
+          method: 'GET',
+          path: '/projects/new',
+          handler: projectsController.new.bind(projectsController),
+          options: {
+            description: 'New project form',
+            auth: false
+          }
+        },
+        {
+          method: 'POST',
+          path: '/projects',
+          handler: projectsController.create.bind(projectsController),
+          options: {
+            description: 'Create new project',
+            auth: false
+          }
         }
       ])
     }

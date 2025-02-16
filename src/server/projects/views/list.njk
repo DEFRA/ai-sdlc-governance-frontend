@@ -37,7 +37,7 @@
                   </td>
                   <td class="govuk-table__cell">
                     {% if project.governanceTemplateId %}
-                      <strong class="govuk-tag">{{ project.governanceTemplateName }}</strong>
+                      {{ project.governanceTemplateName }}
                     {% else %}
                       <span class="govuk-hint">No template assigned</span>
                     {% endif %}
