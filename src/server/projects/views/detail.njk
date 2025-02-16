@@ -3,6 +3,7 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
 
 {% block pageTitle %}{{ pageTitle }} - Defra AI Code Review{% endblock %}
 
@@ -40,12 +41,21 @@
                       <div class="checklist-item govuk-!-margin-bottom-4">
                         <div class="govuk-checkboxes govuk-checkboxes--small">
                           <div class="govuk-checkboxes__item">
+                            {% set hasUnmetDependencies = false %}
+                            {% if item.dependencies_requires %}
+                              {% for dep in item.dependencies_requires %}
+                                {% if not dep.status or dep.status != "complete" %}
+                                  {% set hasUnmetDependencies = true %}
+                                {% endif %}
+                              {% endfor %}
+                            {% endif %}
                             <input class="govuk-checkboxes__input" 
                                    id="status-{{ item._id }}" 
                                    name="status" 
                                    type="checkbox" 
                                    value="complete"
                                    {% if item.status == "complete" %}checked{% endif %}
+                                   {% if hasUnmetDependencies %}disabled{% endif %}
                                    data-testid="status-checkbox-{{ item._id }}"
                                    data-item-id="{{ item._id }}"
                                    onchange="handleStatusChange(this)">
@@ -93,11 +103,17 @@
                         {% if item.dependencies_requires and item.dependencies_requires.length > 0 %}
                           <div class="govuk-!-margin-left-7">
                             <p class="govuk-body-s govuk-!-margin-bottom-0">
-                              {% if item.dependencies_requires | length == 1 %}
-                                <span class="govuk-hint">Requires: {{ item.dependencies_requires[0].name }}</span>
-                              {% else %}
-                                <span class="govuk-hint">Requires: {{ item.dependencies_requires | map(attribute='name') | join(', ') }}</span>
-                              {% endif %}
+                              <span class="govuk-hint">Requires:</span>
+                              {% for dep in item.dependencies_requires %}
+                                <span class="govuk-body-s">
+                                  {{ dep.name }} 
+                                  {{ govukTag({
+                                    text: "Done" if dep.status == "complete" else "To do",
+                                    classes: "govuk-tag--" + ("green" if dep.status == "complete" else "grey")
+                                  }) }}
+                                  {% if not loop.last %}, {% endif %}
+                                </span>
+                              {% endfor %}
                             </p>
                           </div>
                         {% endif %}
