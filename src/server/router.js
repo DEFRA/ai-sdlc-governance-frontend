@@ -7,6 +7,7 @@ import { about } from '~/src/server/about/index.js'
 import { governanceTemplates } from '~/src/server/governance-templates/index.js'
 import { workflowTemplates } from '~/src/server/workflow-templates/index.js'
 import { checklistItemTemplates } from '~/src/server/checklist-item-templates/index.js'
+import { projects } from '~/src/server/projects/index.js'
 
 /**
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -26,7 +27,8 @@ export const router = {
         about,
         governanceTemplates,
         workflowTemplates,
-        checklistItemTemplates
+        checklistItemTemplates,
+        projects
       ])
 
       // Static assets

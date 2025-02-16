@@ -134,6 +134,15 @@ export const checklistItemTemplatesController = {
       const checklistItem = await checklistItemResponse.json()
       workflowTemplateId = checklistItem.workflowTemplateId
 
+      // Ensure dependencies_requires is always an array and properly formatted
+      const dependencies = (
+        Array.isArray(dependenciesRequires)
+          ? dependenciesRequires
+          : [dependenciesRequires]
+      )
+        .filter(Boolean)
+        .map((dep) => (typeof dep === 'object' ? dep._id : dep))
+
       // Make the update API call
       const updateResponse = await fetch(
         `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`,
@@ -146,7 +155,7 @@ export const checklistItemTemplatesController = {
             name,
             description,
             type,
-            dependencies_requires: dependenciesRequires
+            dependencies_requires: dependencies
           })
         }
       )
