@@ -31,7 +31,7 @@
             %% Define all nodes first to ensure proper ordering
             {% for workflow in template.workflowTemplates %}
               {% for item in workflow.checklistItemTemplates %}
-                {{ item._id }}["{{ item.name }}"]:::default
+                {{ item._id }}["{{ item.name }}<br/><small>({{ item.type }})</small>"]:::default
               {% endfor %}
             {% endfor %}
 

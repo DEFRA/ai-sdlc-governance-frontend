@@ -18,12 +18,12 @@
             
             %% Define all nodes first to ensure proper ordering
             {% for item in workflow.checklistItemTemplates %}
-              {{ item._id }}["{{ item.name }}"]:::default
+              {{ item._id }}["{{ item.name }}<br/><small>({{ item.type }})</small>"]:::default
             {% endfor %}
             {% for dep in workflow.checklistItemTemplates %}
               {% for depItem in dep.dependencies_requires %}
                 {% if depItem._id %}
-                  {{ depItem._id }}["{{ depItem.name }}"]:::default
+                  {{ depItem._id }}["{{ depItem.name }}<br/><small>({{ depItem.type }})</small>"]:::default
                 {% endif %}
               {% endfor %}
             {% endfor %}
