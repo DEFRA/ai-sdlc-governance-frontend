@@ -5,4 +5,5 @@ node_modules
 coverage
 
 governance-admin-vault
+defra-ai-sdlc-playbook
 public/assets/javascripts/mermaid.min.js
