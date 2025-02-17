@@ -5,3 +5,4 @@ node_modules
 coverage
 
 governance-admin-vault
+public/assets/javascripts/mermaid.min.js

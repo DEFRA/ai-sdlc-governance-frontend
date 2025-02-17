@@ -13,7 +13,19 @@
 
         <div class="diagram-container govuk-body">
           <pre class="mermaid">
-            %%{init: {'flowchart': {'nodeSpacing': 50, 'rankSpacing': 100, 'htmlLabels': true, 'defaultRenderer': 'elk'}} }%%
+            %%{
+              init: {
+                'flowchart': {
+                  'nodeSpacing': 50,
+                  'rankSpacing': 100,
+                  'htmlLabels': true
+                },
+                'theme': 'base',
+                'themeVariables': {
+                  'fontFamily': 'GDS Transport'
+                }
+              }
+            }%%
             graph LR
             
             %% Define all nodes first to ensure proper ordering
@@ -47,6 +59,16 @@
                 {{ item._id }}
               {% endfor %}
             end
+
+            %% Stack subgraphs vertically
+            {% for extWorkflow in externalWorkflows %}
+              {% if not loop.first %}
+                {{ extWorkflow._id }} ~~~ {{ externalWorkflows[loop.index0 - 1]._id }}
+              {% endif %}
+            {% endfor %}
+            {% if externalWorkflows.length > 0 %}
+              {{ workflow._id }} ~~~ {{ externalWorkflows[externalWorkflows.length - 1]._id }}
+            {% endif %}
 
             %% Add all dependencies after subgraphs
             {% for item in workflow.checklistItemTemplates %}
@@ -87,7 +109,7 @@
           }
         </style>
 
-        <script src="/public/assets/javascripts/mermaid.min.js"></script>
+        <script src="{{ getAssetPath('javascripts/mermaid.min.js') }}"></script>
         <script>
           mermaid.initialize({
             startOnLoad: true,

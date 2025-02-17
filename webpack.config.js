@@ -181,6 +181,13 @@ export default {
         {
           from: path.join(govukFrontendPath, 'dist/govuk/assets'),
           to: 'assets'
+        },
+        {
+          from: path.resolve(
+            dirname,
+            'public/assets/javascripts/mermaid.min.js'
+          ),
+          to: 'javascripts/mermaid.min.js'
         }
       ]
     })

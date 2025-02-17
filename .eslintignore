@@ -3,4 +3,4 @@ coverage/
 .public/
 .server/
 .jest/
-.public/assets/javascripts/mermaid.min.js 
+public/assets/javascripts/mermaid.min.js 
