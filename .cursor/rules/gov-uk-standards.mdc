@@ -13,7 +13,7 @@ globs: *.njk, *.js
 - Use layouts/page.njk as base template
 - Follow GDS template hierarchy
 - Required template blocks:
-  - pageTitle: Page title with " - Defra AI Code Review" suffix
+  - pageTitle: Page title with " - Defra SDLC Governance Checklist" suffix
   - content: Main content area
 - Use govuk-width-container for page layout
 - Use govuk-main-wrapper for main content

@@ -7,7 +7,7 @@
 {% from "govuk/components/select/macro.njk" import govukSelect %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 
-{% block pageTitle %}{{ pageTitle }} - Defra AI Code Review{% endblock %}
+{% block pageTitle %}{{ pageTitle }} - Defra SDLC Governance Checklist{% endblock %}
 
 {% block content %}
 <div class="govuk-width-container">
@@ -134,8 +134,41 @@
 
         <script>
           function validateForm(event) {
+            const errors = [];
             const nameField = document.getElementById('name');
+            const governanceTemplateField = document.getElementById('governanceTemplateId');
+            const workflowCheckboxes = document.querySelectorAll('input[name="selectedWorkflowTemplateIds"]:checked');
+
             if (!nameField.value.trim()) {
+              errors.push({
+                field: 'name',
+                message: 'Enter a project name'
+              });
+              nameField.closest('.govuk-form-group').classList.add('govuk-form-group--error');
+              nameField.classList.add('govuk-input--error');
+            }
+
+            if (!governanceTemplateField?.value) {
+              errors.push({
+                field: 'governanceTemplateId',
+                message: 'Select a governance template'
+              });
+              governanceTemplateField.closest('.govuk-form-group').classList.add('govuk-form-group--error');
+              governanceTemplateField.classList.add('govuk-select--error');
+            }
+
+            if (workflowCheckboxes.length === 0) {
+              errors.push({
+                field: 'selectedWorkflowTemplateIds',
+                message: 'Select at least one workflow'
+              });
+              const workflowGroup = document.querySelector('[data-testid="workflow-checkboxes"]');
+              if (workflowGroup) {
+                workflowGroup.closest('.govuk-form-group').classList.add('govuk-form-group--error');
+              }
+            }
+
+            if (errors.length > 0) {
               event.preventDefault();
               const errorSummary = document.createElement('div');
               errorSummary.className = 'govuk-error-summary';
@@ -145,17 +178,13 @@
                   <h2 class="govuk-error-summary__title">There is a problem</h2>
                   <div class="govuk-error-summary__body">
                     <ul class="govuk-list govuk-error-summary__list">
-                      <li>
-                        <a href="#name">Enter a project name</a>
-                      </li>
+                      ${errors.map(error => `<li><a href="#${error.field}">${error.message}</a></li>`).join('')}
                     </ul>
                   </div>
                 </div>`;
               const form = document.querySelector('form');
               form.parentNode.insertBefore(errorSummary, form);
-              nameField.closest('.govuk-form-group').classList.add('govuk-form-group--error');
-              nameField.classList.add('govuk-input--error');
-              nameField.focus();
+              document.getElementById(errors[0].field)?.focus();
               return false;
             }
             return true;
@@ -173,29 +202,41 @@
               name: formData.get('name'),
               description: formData.get('description'),
               governanceTemplateId: formData.get('governanceTemplateId'),
-              selectedWorkflowTemplateIds: formData.getAll('selectedWorkflowTemplateIds')
+              selectedWorkflowTemplateIds: formData.getAll('selectedWorkflowTemplateIds'),
+              metadata: {}
             };
 
-            fetch(form.action, {
+            // Log the payload for debugging
+            console.log('Raw data object:', data);
+            console.log('Stringified data:', JSON.stringify(data));
+
+            const requestConfig = {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
               },
               body: JSON.stringify(data)
-            })
+            };
+
+            console.log('Full request configuration:', requestConfig);
+
+            fetch(form.action, requestConfig)
             .then(response => {
               if (!response.ok) {
                 return response.text().then(text => {
+                  console.error('Error response:', text);
                   throw new Error(text);
                 });
               }
               return response.json();
             })
             .then(project => {
+              console.log('Project created successfully:', project);
               window.location.href = `/projects/${project._id}`;
             })
             .catch(error => {
+              console.error('Failed to create project:', error);
               const errorSummary = document.createElement('div');
               errorSummary.className = 'govuk-error-summary';
               errorSummary.setAttribute('data-module', 'govuk-error-summary');
@@ -205,7 +246,7 @@
                   <div class="govuk-error-summary__body">
                     <ul class="govuk-list govuk-error-summary__list">
                       <li>
-                        <a href="#name">Unable to create project. Please try again.</a>
+                        <a href="#name">Unable to create project: ${error.message}</a>
                       </li>
                     </ul>
                   </div>
