@@ -134,7 +134,8 @@ export const projectsController = {
             ? selectedWorkflowTemplateIds
             : selectedWorkflowTemplateIds
               ? [selectedWorkflowTemplateIds]
-              : []
+              : [],
+          metadata: {}
         })
       })
 
@@ -152,7 +153,7 @@ export const projectsController = {
       }
 
       const project = await response.json()
-      return h.response(project).code(200)
+      return h.redirect(`/projects/${project._id}`)
     } catch (error) {
       request.logger.error('Error creating project:', {
         error: error.message,
