@@ -99,7 +99,7 @@
               {% set workflowItems = workflowItems.concat([{
                 value: workflow._id,
                 text: workflow.name,
-                checked: values.selectedWorkflowTemplateIds and (workflow._id | string in values.selectedWorkflowTemplateIds)
+                checked: values.governanceTemplateId is not undefined
               }]) %}
             {% endfor %}
 
