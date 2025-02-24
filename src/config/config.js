@@ -40,7 +40,7 @@ export const config = convict({
   serviceName: {
     doc: 'Applications Service Name',
     format: String,
-    default: 'ai-sdlc-governance-frontend'
+    default: 'Defra SDLC Governance Checklist'
   },
   root: {
     doc: 'Project root',
@@ -215,6 +215,15 @@ export const config = convict({
       default: 'x-cdp-request-id',
       env: 'TRACING_HEADER'
     }
+  },
+  apiServer: {
+    doc: 'The base URL of the API server',
+    format: String,
+    default:
+      process.env.NODE_ENV === 'development'
+        ? 'http://localhost:3001'
+        : process.env.API_SERVER,
+    env: 'API_SERVER'
   }
 })
 

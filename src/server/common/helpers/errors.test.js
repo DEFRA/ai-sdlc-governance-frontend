@@ -22,7 +22,9 @@ describe('#errors', () => {
     })
 
     expect(result).toEqual(
-      expect.stringContaining('Page not found | ai-sdlc-governance-frontend')
+      expect.stringContaining(
+        'Page not found | Defra SDLC Governance Checklist'
+      )
     )
     expect(statusCode).toBe(statusCodes.notFound)
   })

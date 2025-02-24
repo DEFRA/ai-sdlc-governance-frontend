@@ -1,0 +1,193 @@
+{% extends "layouts/page.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+
+{% block pageTitle %}{{ pageTitle }} - Defra SDLC Governance Checklist{% endblock %}
+
+{% block content %}
+<div class="govuk-width-container">
+  <main class="govuk-main-wrapper" id="main-content" role="main">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-full">
+        <a href="/projects" class="govuk-back-link">Back to projects</a>
+
+        {% if error %}
+          {{ govukErrorSummary({
+            titleText: "There is a problem",
+            errorList: [
+              {
+                text: error,
+                href: "#"
+              }
+            ]
+          }) }}
+        {% endif %}
+
+        {% if project %}
+          <h1 class="govuk-heading-xl">Project: {{ project.name }}</h1>
+          <p class="govuk-body-l">{{ project.governanceTemplate.name }} - v{{ project.governanceTemplate.version }}</p>
+
+          {{ govukButton({
+            text: "View Dependencies Diagram",
+            href: "/projects/" + project._id + "/diagram",
+            classes: "govuk-button--secondary govuk-!-margin-bottom-6",
+            attributes: {
+              "data-testid": "view-diagram-button"
+            }
+          }) }}
+
+          {% if project.workflowInstances and project.workflowInstances.length > 0 %}
+            {% for workflow in project.workflowInstances %}
+              <div class="govuk-!-margin-bottom-9">
+                <h2 class="govuk-heading-l">{{ workflow.name }}</h2>
+
+                {% if workflow.checklistItems and workflow.checklistItems.length > 0 %}
+                  <div class="checklist-items">
+                    {% for item in workflow.checklistItems %}
+                      <div class="checklist-item govuk-!-margin-bottom-4">
+                        <div class="govuk-checkboxes govuk-checkboxes--small">
+                          <div class="govuk-checkboxes__item">
+                            {% set hasUnmetDependencies = false %}
+                            {% if item.dependencies_requires %}
+                              {% for dep in item.dependencies_requires %}
+                                {% if not dep.status or dep.status != "complete" %}
+                                  {% set hasUnmetDependencies = true %}
+                                {% endif %}
+                              {% endfor %}
+                            {% endif %}
+                            <input class="govuk-checkboxes__input" 
+                                   id="status-{{ item._id }}" 
+                                   name="status" 
+                                   type="checkbox" 
+                                   value="complete"
+                                   {% if item.status == "complete" %}checked{% endif %}
+                                   {% if hasUnmetDependencies %}disabled{% endif %}
+                                   data-testid="status-checkbox-{{ item._id }}"
+                                   data-item-id="{{ item._id }}"
+                                   onchange="handleStatusChange(this)">
+                            <label class="govuk-label govuk-checkboxes__label" for="status-{{ item._id }}">
+                              {{ item.name }}
+                            </label>
+                          </div>
+                        </div>
+
+                        {% if item.type == "document" %}
+                          <div class="govuk-!-margin-left-7">
+                            {% if item.documentUrl %}
+                              <a href="{{ item.documentUrl }}" class="govuk-link govuk-!-margin-right-2">{{ item.documentName }}</a>
+                              <span class="govuk-body-s">({{ item.uploadedAt | date }})</span>
+                            {% else %}
+                              {{ govukButton({
+                                text: "Generate",
+                                href: "/checklist-item-instances/" + item._id + "/generate",
+                                classes: "govuk-button--secondary govuk-!-margin-bottom-0 govuk-!-margin-left-2",
+                                attributes: {
+                                  "data-testid": "generate-button-" + item._id
+                                }
+                              }) }}
+                            {% endif %}
+                          </div>
+                        {% endif %}
+
+                        {% if item.type == "approval" %}
+                          <div class="govuk-!-margin-left-7">
+                            {% if item.approvalStatus %}
+                              <span class="govuk-body-s">Approved by {{ item.approvedBy }} on {{ item.approvedAt | date }}</span>
+                            {% else %}
+                              {{ govukButton({
+                                text: "Upload Approval",
+                                href: "/checklist-item-instances/" + item._id + "/upload",
+                                classes: "govuk-button--secondary govuk-!-margin-bottom-0 govuk-!-margin-left-2",
+                                attributes: {
+                                  "data-testid": "upload-button-" + item._id
+                                }
+                              }) }}
+                            {% endif %}
+                          </div>
+                        {% endif %}
+
+                        {% if item.dependencies_requires and item.dependencies_requires.length > 0 %}
+                          <div class="govuk-!-margin-left-7">
+                            <p class="govuk-body-s govuk-!-margin-bottom-0">
+                              <span class="govuk-hint">Requires:</span>
+                              {% for dep in item.dependencies_requires %}
+                                <span class="govuk-body-s">
+                                  {{ dep.name }} 
+                                  {{ govukTag({
+                                    text: "Done" if dep.status == "complete" else "To do",
+                                    classes: "govuk-tag--" + ("green" if dep.status == "complete" else "grey")
+                                  }) }}
+                                  {% if not loop.last %}, {% endif %}
+                                </span>
+                              {% endfor %}
+                            </p>
+                          </div>
+                        {% endif %}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <p class="govuk-body">No checklist items found for this workflow.</p>
+                {% endif %}
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="govuk-body">No workflow instances found for this project.</p>
+          {% endif %}
+
+          <script>
+            function handleStatusChange(checkbox) {
+              const itemId = checkbox.dataset.itemId;
+              const status = checkbox.checked ? 'complete' : 'incomplete';
+              
+              fetch(`/checklist-item-instances/${itemId}/status`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Accept: 'application/json'
+                },
+                body: JSON.stringify({ status })
+              })
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error('Network response was not ok');
+                }
+                return response.json();
+              })
+              .then(data => {
+                if (!data.success) {
+                  throw new Error('Update failed');
+                }
+                // Reload the page to show updated dependencies
+                window.location.reload();
+              })
+              .catch(error => {
+                console.error('Error:', error);
+                // Revert checkbox state
+                checkbox.checked = !checkbox.checked;
+                // Show error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'govuk-error-summary';
+                errorDiv.innerHTML = `
+                  <div role="alert">
+                    <h2 class="govuk-error-summary__title">There is a problem</h2>
+                    <div class="govuk-error-summary__body">
+                      <p>Unable to update status. Please try again.</p>
+                    </div>
+                  </div>
+                `;
+                checkbox.closest('.checklist-item').insertBefore(errorDiv, checkbox.closest('.govuk-checkboxes'));
+                // Remove error message after 5 seconds
+                setTimeout(() => errorDiv.remove(), 5000);
+              });
+            }
+          </script>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %} 

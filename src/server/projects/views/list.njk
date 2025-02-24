@@ -1,0 +1,63 @@
+{% extends "layouts/page.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% block pageTitle %}Projects - Defra SDLC Governance Checklist{% endblock %}
+
+{% block content %}
+<div class="govuk-width-container">
+  <main class="govuk-main-wrapper" id="main-content" role="main">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-full">
+        <h1 class="govuk-heading-xl">Projects</h1>
+
+        {{ govukButton({
+          text: "Create new project",
+          href: "/projects/new",
+          classes: "govuk-button",
+          attributes: {
+            "data-testid": "create-project-button"
+          }
+        }) }}
+        
+        {% if projects and projects.length %}
+          <table class="govuk-table">
+            <thead class="govuk-table__head">
+              <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Project Name</th>
+                <th scope="col" class="govuk-table__header">Governance Template</th>
+                <th scope="col" class="govuk-table__header">Description</th>
+              </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+              {% for project in projects %}
+                <tr class="govuk-table__row">
+                  <td class="govuk-table__cell">
+                    <a href="/projects/{{ project._id }}" class="govuk-link">{{ project.name }}</a>
+                  </td>
+                  <td class="govuk-table__cell">
+                    {% if project.governanceTemplateId %}
+                      {{ project.governanceTemplateName }}
+                    {% else %}
+                      <span class="govuk-hint">No template assigned</span>
+                    {% endif %}
+                  </td>
+                  <td class="govuk-table__cell">
+                    {% if project.description %}
+                      {{ project.description }}
+                    {% else %}
+                      <span class="govuk-hint">No description available</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="govuk-body">No projects found.</p>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %} 

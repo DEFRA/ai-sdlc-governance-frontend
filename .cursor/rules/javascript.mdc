@@ -9,7 +9,7 @@ globs: *.js
 - TypeScript (for type checking only)
 
 ## Tech Stack
-- Node.js + Hapi.js
+- Node.js + Hapi.js (do NOT use Express)
 - govuk-frontend npm library
 - Nunjucks templates npm library
 - Webpack + Babel
@@ -32,11 +32,13 @@ globs: *.js
     - /globals/ - Global template variables
 - /src/server/ - Server-side code
   - /common/ - Shared components and utilities
+    - /templates/ - Base templates and layouts
+    - /components/ - Reusable view components
   - /{feature}/ - Feature modules
     - controller.js - Route handlers and business logic
     - controller.test.js - Unit tests
     - index.js - Route definitions
-    - *.njk - Feature templates
+    - /views/ - Feature-specific templates
   - router.js - Main route aggregation
   - index.js - Server setup and plugins
 
@@ -65,7 +67,6 @@ globs: *.js
 - Consistent config access pattern
 - Type-safe config values
 
-
 ## Markdown Parsing
 - Use marked library for parsing markdown
 - Configure marked options to match GDS styling
@@ -83,3 +84,14 @@ globs: *.js
   - UI: test behavior + use data-testid
 - Use describe blocks and beforeEach for setup
 - Mock external dependencies
+
+## Template Handling
+- Configure Nunjucks search paths in nunjucks.js:
+  - govuk-frontend templates
+  - project views directory
+  - common templates
+  - common components
+- Use h.view with template paths relative to search paths
+- Bind controller methods when used as route handlers
+- Follow template inheritance patterns from gov-uk-standards
+- Keep templates close to their feature modules

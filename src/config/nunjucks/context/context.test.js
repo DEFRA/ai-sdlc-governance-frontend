@@ -43,11 +43,16 @@ describe('#context', () => {
           },
           {
             isActive: false,
-            text: 'About',
-            url: '/about'
+            text: 'Projects',
+            url: '/projects'
+          },
+          {
+            isActive: false,
+            text: 'Governance Templates',
+            url: '/governance-templates'
           }
         ],
-        serviceName: 'ai-sdlc-governance-frontend',
+        serviceName: 'Defra SDLC Governance Checklist',
         serviceUrl: '/'
       })
     })
@@ -132,11 +137,16 @@ describe('#context cache', () => {
           },
           {
             isActive: false,
-            text: 'About',
-            url: '/about'
+            text: 'Projects',
+            url: '/projects'
+          },
+          {
+            isActive: false,
+            text: 'Governance Templates',
+            url: '/governance-templates'
           }
         ],
-        serviceName: 'ai-sdlc-governance-frontend',
+        serviceName: 'Defra SDLC Governance Checklist',
         serviceUrl: '/'
       })
     })

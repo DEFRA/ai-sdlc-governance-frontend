@@ -1,10 +1,12 @@
 import { ecsFormat } from '@elastic/ecs-pino-format'
 import { config } from '~/src/config/config.js'
 import { getTraceId } from '@defra/hapi-tracing'
+import path from 'path'
 
 const logConfig = config.get('log')
 const serviceName = config.get('serviceName')
 const serviceVersion = config.get('serviceVersion')
+const isDevelopment = config.get('isDevelopment')
 
 /**
  * @type {{ecs: Omit<LoggerOptions, "mixin"|"transport">, "pino-pretty": {transport: {target: string}}}}
@@ -16,7 +18,18 @@ const formatters = {
       serviceName
     })
   },
-  'pino-pretty': { transport: { target: 'pino-pretty' } }
+  'pino-pretty': {
+    transport: {
+      target: 'pino-pretty',
+      options: isDevelopment
+        ? {
+            destination: path.join(process.cwd(), 'logs', 'app.log'),
+            mkdir: true,
+            append: false
+          }
+        : undefined
+    }
+  }
 }
 
 /**

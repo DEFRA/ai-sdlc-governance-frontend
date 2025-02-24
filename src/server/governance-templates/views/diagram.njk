@@ -1,0 +1,111 @@
+{% extends "layouts/page.njk" %}
+
+{% block pageTitle %}{{ template.name }} Dependencies - Defra SDLC Governance Checklist{% endblock %}
+
+{% block content %}
+<div class="govuk-width-container">
+  <main class="govuk-main-wrapper" id="main-content" role="main">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-full">
+        <a href="/governance-templates/{{ template._id }}" class="govuk-back-link">Back to template</a>
+
+        <h1 class="govuk-heading-xl">{{ template.name }} - Dependencies Diagram</h1>
+
+        <div class="diagram-container govuk-body">
+          <pre class="mermaid">
+            %%{
+              init: {
+                'flowchart': {
+                  'nodeSpacing': 50,
+                  'rankSpacing': 100,
+                  'htmlLabels': true
+                },
+                'theme': 'base',
+                'themeVariables': {
+                  'fontFamily': 'GDS Transport'
+                }
+              }
+            }%%
+            graph LR
+            
+            %% Define all nodes first to ensure proper ordering
+            {% for workflow in template.workflowTemplates %}
+              {% for item in workflow.checklistItemTemplates %}
+                {{ item._id }}["{{ item.name }}<br/><small>({{ item.type }})</small>"]:::default
+              {% endfor %}
+            {% endfor %}
+
+            %% Group items by workflow
+            {% for workflow in template.workflowTemplates %}
+              subgraph {{ workflow._id }}[{{ workflow.name }}]
+                {% for item in workflow.checklistItemTemplates %}
+                  {{ item._id }}
+                {% endfor %}
+              end
+            {% endfor %}
+
+            %% Stack subgraphs vertically
+            {% for workflow in template.workflowTemplates %}
+              {% if not loop.first %}
+                {{ workflow._id }} ~~~ {{ template.workflowTemplates[loop.index0 - 1]._id }}
+              {% endif %}
+            {% endfor %}
+
+            %% Add all dependencies
+            {% for workflow in template.workflowTemplates %}
+              {% for item in workflow.checklistItemTemplates %}
+                {% for dep in item.dependencies_requires %}
+                  {% if dep._id %}
+                    {{ dep._id }} --> {{ item._id }}
+                  {% else %}
+                    {% for depItem in workflow.checklistItemTemplates %}
+                      {% if depItem._id == dep %}
+                        {{ depItem._id }} --> {{ item._id }}
+                      {% endif %}
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
+            {% endfor %}
+            
+            classDef default fill:#f8f8f8,stroke:#505a5f,stroke-width:2px,rx:4,ry:4;
+            classDef subgraphStyle fill:#ffffff,stroke:#1d70b8,stroke-width:2px;
+            linkStyle default stroke:#1d70b8,stroke-width:2px;
+            {% for workflow in template.workflowTemplates %}
+            class {{ workflow._id }} subgraphStyle;
+            {% endfor %}
+          </pre>
+        </div>
+
+        <style>
+          .diagram-container {
+            background: white;
+            padding: 20px;
+            border: 1px solid #b1b4b6;
+            margin: 30px 0;
+            overflow-x: auto;
+          }
+          .mermaid {
+            text-align: center;
+            min-width: 800px;
+          }
+        </style>
+
+        <script src="{{ getAssetPath('javascripts/mermaid.min.js') }}"></script>
+        <script>
+          mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+              useMaxWidth: false,
+              htmlLabels: true,
+              curve: 'basis'
+            }
+          });
+        </script>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %} 

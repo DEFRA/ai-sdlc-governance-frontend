@@ -1,5 +1,5 @@
 /**
- * @param {Partial<Request> | null} request
+ * @param {Partial<import('@hapi/hapi').Request> | null} request
  */
 export function buildNavigation(request) {
   return [
@@ -9,13 +9,14 @@ export function buildNavigation(request) {
       isActive: request?.path === '/'
     },
     {
-      text: 'About',
-      url: '/about',
-      isActive: request?.path === '/about'
+      text: 'Projects',
+      url: '/projects',
+      isActive: request?.path?.startsWith('/projects')
+    },
+    {
+      text: 'Governance Templates',
+      url: '/governance-templates',
+      isActive: request?.path?.startsWith('/governance-templates')
     }
   ]
 }
-
-/**
- * @import { Request } from '@hapi/hapi'
- */

@@ -1,0 +1,121 @@
+{% extends "layouts/page.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
+
+{% block pageTitle %}{{ pageTitle }} - Defra SDLC Governance Checklist{% endblock %}
+
+{% block content %}
+<div class="govuk-width-container">
+  <main class="govuk-main-wrapper" id="main-content" role="main">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+        <a href="/governance-templates/{{ workflow.governanceTemplateId }}" class="govuk-back-link">Back to template</a>
+
+        {% if error %}
+          <div class="govuk-error-summary" role="alert" tabindex="-1">
+            <h2 class="govuk-error-summary__title">Error</h2>
+            <div class="govuk-error-summary__body">
+              <p>{{ error }}</p>
+            </div>
+          </div>
+        {% else %}
+          <h1 class="govuk-heading-xl">{{ workflow.name }}</h1>
+          
+          <dl class="govuk-summary-list">
+            {% if workflow.description %}
+              <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Description</dt>
+                <dd class="govuk-summary-list__value">{{ workflow.description }}</dd>
+              </div>
+            {% endif %}
+          </dl>
+
+          <h2 class="govuk-heading-l">Checklist Items</h2>
+
+          {{ govukButton({
+            text: "Add new checklist item",
+            href: "/governance-templates/" + workflow.governanceTemplateId + "/workflows/" + workflow._id + "/checklist-items/new",
+            classes: "govuk-button--secondary",
+            attributes: {
+              "data-testid": "add-checklist-item-button"
+            }
+          }) }}
+
+          {{ govukButton({
+            text: "View Dependencies Diagram",
+            href: "/governance-templates/" + workflow.governanceTemplateId + "/workflows/" + workflow._id + "/diagram",
+            classes: "govuk-button--secondary",
+            attributes: {
+              "data-testid": "view-diagram-button"
+            }
+          }) }}
+
+          {% if workflow.checklistItemTemplates and workflow.checklistItemTemplates.length > 0 %}
+            {% set tableRows = [] %}
+            {% for item in workflow.checklistItemTemplates %}
+              {% set dependenciesRequires = [] %}
+              {% for dep in item.dependencies_requires %}
+                {% if dep._id %}
+                  {% set dependenciesRequires = (dependenciesRequires.push(dep.name), dependenciesRequires) %}
+                {% else %}
+                  {% for depItem in workflow.checklistItemTemplates %}
+                    {% if depItem._id == dep %}
+                      {% set dependenciesRequires = (dependenciesRequires.push(depItem.name), dependenciesRequires) %}
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              {% endfor %}
+
+              {% set dependenciesRequiredBy = [] %}
+              {% for depItem in workflow.checklistItemTemplates %}
+                {% if depItem.dependencies_requires %}
+                  {% for dep in depItem.dependencies_requires %}
+                    {% if (dep._id and dep._id == item._id) or dep == item._id %}
+                      {% set dependenciesRequiredBy = (dependenciesRequiredBy.push(depItem.name), dependenciesRequiredBy) %}
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              {% endfor %}
+
+              {% set row = [
+                {
+                  html: "<a href='/checklist-items/" + item._id + "' class='govuk-link' data-testid='checklist-item-link'>" + item.name + "</a>",
+                  classes: "govuk-!-font-weight-bold"
+                },
+                {
+                  text: item.type if item.type else "Not specified"
+                },
+                {
+                  text: item.description if item.description else "No description provided"
+                },
+                {
+                  text: dependenciesRequires | join(", ") if dependenciesRequires.length else "None"
+                },
+                {
+                  text: dependenciesRequiredBy | join(", ") if dependenciesRequiredBy.length else "None"
+                }
+              ] %}
+              {% set tableRows = (tableRows.push(row), tableRows) %}
+            {% endfor %}
+
+            {{ govukTable({
+              firstCellIsHeader: true,
+              head: [
+                { text: "Name" },
+                { text: "Type" },
+                { text: "Description" },
+                { text: "Requires" },
+                { text: "Required By" }
+              ],
+              rows: tableRows
+            }) }}
+          {% else %}
+            <p class="govuk-body">No checklist items defined for this workflow.</p>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %} 
