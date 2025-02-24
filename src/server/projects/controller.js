@@ -331,5 +331,103 @@ export const projectsController = {
       request.logger.error('Error updating checklist item status:', error)
       return h.response({ error: 'Unable to update status' }).code(500)
     }
+  },
+
+  async diagram(request, h) {
+    try {
+      const { id } = request.params
+
+      // Fetch project details
+      const projectResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/projects/${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!projectResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${projectResponse.status}`
+        )
+      }
+
+      const project = await projectResponse.json()
+
+      // Fetch governance template details
+      const templateResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/governance-templates/${project.governanceTemplateId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!templateResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${templateResponse.status}`
+        )
+      }
+
+      const governanceTemplate = await templateResponse.json()
+      project.governanceTemplate = governanceTemplate
+
+      // Fetch workflow instances
+      const workflowInstancesResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/workflow-instances?projectId=${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!workflowInstancesResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${workflowInstancesResponse.status}`
+        )
+      }
+
+      const workflowInstances = await workflowInstancesResponse.json()
+
+      // Fetch checklist item instances for each workflow
+      for (const workflow of workflowInstances) {
+        const checklistResponse = await fetch(
+          `${config.get('apiServer')}/api/v1/checklist-item-instances?workflowInstanceId=${workflow._id}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+
+        if (!checklistResponse.ok) {
+          throw new Error(
+            `API call failed with status: ${checklistResponse.status}`
+          )
+        }
+
+        workflow.checklistItems = await checklistResponse.json()
+      }
+
+      project.workflowInstances = workflowInstances
+
+      return h.view('projects/views/diagram', {
+        pageTitle: project.name,
+        project
+      })
+    } catch (error) {
+      request.logger.error('Error loading project diagram:', error)
+      return h.view('projects/views/diagram', {
+        pageTitle: 'Project Not Found',
+        error: 'Unable to load project diagram'
+      })
+    }
   }
 }

@@ -53,6 +53,15 @@ export const projects = {
             description: 'Update checklist item status',
             auth: false
           }
+        },
+        {
+          method: 'GET',
+          path: '/projects/{id}/diagram',
+          handler: projectsController.diagram.bind(projectsController),
+          options: {
+            description: 'View project dependencies diagram',
+            auth: false
+          }
         }
       ])
     }
