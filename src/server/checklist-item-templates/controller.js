@@ -495,5 +495,126 @@ export const checklistItemTemplatesController = {
         throw Boom.badImplementation('Unable to load form data')
       }
     }
+  },
+
+  async deleteConfirmation(request, h) {
+    try {
+      const { id } = request.params
+
+      // Fetch checklist item template details
+      const checklistItemResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!checklistItemResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${checklistItemResponse.status}`
+        )
+      }
+
+      const checklistItem = await checklistItemResponse.json()
+
+      return h.view('checklist-item-templates/views/delete-confirmation', {
+        pageTitle: 'Delete Checklist Item Template',
+        checklistItem
+      })
+    } catch (error) {
+      request.logger.error(
+        'Error fetching checklist item template for deletion:',
+        error
+      )
+      return h.view('checklist-item-templates/views/delete-confirmation', {
+        pageTitle: 'Delete Checklist Item Template',
+        error:
+          'Unable to load checklist item template details. Please try again.',
+        checklistItem: { _id: request.params.id }
+      })
+    }
+  },
+
+  async delete(request, h) {
+    try {
+      const { id } = request.params
+
+      // Get the checklist item first to know where to redirect after deletion
+      const checklistItemResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      let workflowTemplateId = null
+      if (checklistItemResponse.ok) {
+        const checklistItem = await checklistItemResponse.json()
+        workflowTemplateId = checklistItem.workflowTemplateId
+      }
+
+      // Delete the checklist item template
+      const response = await fetch(
+        `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`API call failed with status: ${response.status}`)
+      }
+
+      // Redirect to the workflow template if we have its ID, otherwise to the governance templates list
+      if (workflowTemplateId) {
+        return h.redirect(`/workflow-templates/${workflowTemplateId}`)
+      } else {
+        return h.redirect('/governance-templates')
+      }
+    } catch (error) {
+      request.logger.error('Error deleting checklist item template:', error)
+
+      // Try to fetch the checklist item again to show the error page
+      try {
+        const checklistItemResponse = await fetch(
+          `${config.get('apiServer')}/api/v1/checklist-item-templates/${request.params.id}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+
+        const checklistItem = checklistItemResponse.ok
+          ? await checklistItemResponse.json()
+          : { _id: request.params.id }
+
+        return h.view('checklist-item-templates/views/delete-confirmation', {
+          pageTitle: 'Delete Checklist Item Template',
+          error: 'Unable to delete checklist item template. Please try again.',
+          checklistItem
+        })
+      } catch (fetchError) {
+        request.logger.error(
+          'Error fetching checklist item after delete failure:',
+          fetchError
+        )
+        return h.view('checklist-item-templates/views/delete-confirmation', {
+          pageTitle: 'Delete Checklist Item Template',
+          error: 'Unable to delete checklist item template. Please try again.',
+          checklistItem: { _id: request.params.id }
+        })
+      }
+    }
   }
 }

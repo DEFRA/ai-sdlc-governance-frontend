@@ -34,7 +34,18 @@
           <p class="govuk-body">Editing checklist item in workflow: {{ workflow.name }}</p>
         {% endif %}
 
-        <form method="POST" action="/checklist-items/{{ checklistItem._id }}" novalidate>
+        <div class="govuk-button-group">
+          {{ govukButton({
+            text: "Delete Checklist Item",
+            classes: "govuk-button--warning",
+            href: "/checklist-item-templates/" + checklistItem._id + "/delete",
+            attributes: {
+              "data-testid": "delete-checklist-item-button-" + checklistItem._id
+            }
+          }) }}
+        </div>
+
+        <form method="POST" action="/checklist-item-templates/{{ checklistItem._id }}" novalidate>
           {{ govukInput({
             label: {
               text: "Item Name",

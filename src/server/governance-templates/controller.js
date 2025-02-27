@@ -207,5 +207,103 @@ export const governanceTemplatesController = {
         error: 'Unable to load governance template'
       })
     }
+  },
+
+  async deleteConfirmation(request, h) {
+    try {
+      const { id } = request.params
+
+      // Fetch governance template details
+      const templateResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/governance-templates/${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!templateResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${templateResponse.status}`
+        )
+      }
+
+      const template = await templateResponse.json()
+
+      return h.view('governance-templates/views/delete-confirmation', {
+        pageTitle: 'Delete Governance Template',
+        template
+      })
+    } catch (error) {
+      request.logger.error(
+        'Error fetching governance template for deletion:',
+        error
+      )
+      return h.view('governance-templates/views/delete-confirmation', {
+        pageTitle: 'Delete Governance Template',
+        error: 'Unable to load governance template details. Please try again.',
+        template: { _id: request.params.id }
+      })
+    }
+  },
+
+  async delete(request, h) {
+    try {
+      const { id } = request.params
+
+      // Delete the governance template
+      const response = await fetch(
+        `${config.get('apiServer')}/api/v1/governance-templates/${id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`API call failed with status: ${response.status}`)
+      }
+
+      return h.redirect('/governance-templates')
+    } catch (error) {
+      request.logger.error('Error deleting governance template:', error)
+
+      // Try to fetch the template again to show the error page
+      try {
+        const templateResponse = await fetch(
+          `${config.get('apiServer')}/api/v1/governance-templates/${request.params.id}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+
+        const template = templateResponse.ok
+          ? await templateResponse.json()
+          : { _id: request.params.id }
+
+        return h.view('governance-templates/views/delete-confirmation', {
+          pageTitle: 'Delete Governance Template',
+          error: 'Unable to delete governance template. Please try again.',
+          template
+        })
+      } catch (fetchError) {
+        request.logger.error(
+          'Error fetching template after delete failure:',
+          fetchError
+        )
+        return h.view('governance-templates/views/delete-confirmation', {
+          pageTitle: 'Delete Governance Template',
+          error: 'Unable to delete governance template. Please try again.',
+          template: { _id: request.params.id }
+        })
+      }
+    }
   }
 }

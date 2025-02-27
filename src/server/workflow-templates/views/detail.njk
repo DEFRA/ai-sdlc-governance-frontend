@@ -31,56 +31,75 @@
             {% endif %}
           </dl>
 
+          <div class="govuk-button-group">
+            {{ govukButton({
+              text: "Add new checklist item",
+              href: "/governance-templates/" + workflow.governanceTemplateId + "/workflows/" + workflow._id + "/checklist-items/new",
+              classes: "govuk-button--secondary",
+              attributes: {
+                "data-testid": "add-checklist-item-button"
+              }
+            }) }}
+
+            {{ govukButton({
+              text: "View Dependencies Diagram",
+              href: "/governance-templates/" + workflow.governanceTemplateId + "/workflows/" + workflow._id + "/diagram",
+              classes: "govuk-button--secondary",
+              attributes: {
+                "data-testid": "view-diagram-button"
+              }
+            }) }}
+
+            {{ govukButton({
+              text: "Delete Workflow",
+              classes: "govuk-button--warning",
+              href: "/workflow-templates/" + workflow._id + "/delete",
+              attributes: {
+                "data-testid": "delete-workflow-button-" + workflow._id
+              }
+            }) }}
+          </div>
+
           <h2 class="govuk-heading-l">Checklist Items</h2>
-
-          {{ govukButton({
-            text: "Add new checklist item",
-            href: "/governance-templates/" + workflow.governanceTemplateId + "/workflows/" + workflow._id + "/checklist-items/new",
-            classes: "govuk-button--secondary",
-            attributes: {
-              "data-testid": "add-checklist-item-button"
-            }
-          }) }}
-
-          {{ govukButton({
-            text: "View Dependencies Diagram",
-            href: "/governance-templates/" + workflow.governanceTemplateId + "/workflows/" + workflow._id + "/diagram",
-            classes: "govuk-button--secondary",
-            attributes: {
-              "data-testid": "view-diagram-button"
-            }
-          }) }}
 
           {% if workflow.checklistItemTemplates and workflow.checklistItemTemplates.length > 0 %}
             {% set tableRows = [] %}
             {% for item in workflow.checklistItemTemplates %}
               {% set dependenciesRequires = [] %}
-              {% for dep in item.dependencies_requires %}
-                {% if dep._id %}
-                  {% set dependenciesRequires = (dependenciesRequires.push(dep.name), dependenciesRequires) %}
-                {% else %}
-                  {% for depItem in workflow.checklistItemTemplates %}
-                    {% if depItem._id == dep %}
-                      {% set dependenciesRequires = (dependenciesRequires.push(depItem.name), dependenciesRequires) %}
-                    {% endif %}
-                  {% endfor %}
-                {% endif %}
-              {% endfor %}
+              {% if item.dependencies_requires %}
+                {% for dep in item.dependencies_requires %}
+                  {% if dep.name %}
+                    {% set _ = dependenciesRequires.push(dep.name) %}
+                  {% else %}
+                    {% for depItem in workflow.checklistItemTemplates %}
+                      {% if depItem._id == dep %}
+                        {% set _ = dependenciesRequires.push(depItem.name) %}
+                      {% endif %}
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
 
               {% set dependenciesRequiredBy = [] %}
-              {% for depItem in workflow.checklistItemTemplates %}
-                {% if depItem.dependencies_requires %}
-                  {% for dep in depItem.dependencies_requires %}
-                    {% if (dep._id and dep._id == item._id) or dep == item._id %}
-                      {% set dependenciesRequiredBy = (dependenciesRequiredBy.push(depItem.name), dependenciesRequiredBy) %}
-                    {% endif %}
-                  {% endfor %}
-                {% endif %}
-              {% endfor %}
+              {% if item.dependencies_requiredBy %}
+                {% for dep in item.dependencies_requiredBy %}
+                  {% set _ = dependenciesRequiredBy.push(dep.name) %}
+                {% endfor %}
+              {% else %}
+                {% for depItem in workflow.checklistItemTemplates %}
+                  {% if depItem.dependencies_requires %}
+                    {% for dep in depItem.dependencies_requires %}
+                      {% if (dep._id and dep._id == item._id) or dep == item._id %}
+                        {% set _ = dependenciesRequiredBy.push(depItem.name) %}
+                      {% endif %}
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
 
               {% set row = [
                 {
-                  html: "<a href='/checklist-items/" + item._id + "' class='govuk-link' data-testid='checklist-item-link'>" + item.name + "</a>",
+                  html: "<a href='/checklist-item-templates/" + item._id + "' class='govuk-link' data-testid='checklist-item-link'>" + item.name + "</a>",
                   classes: "govuk-!-font-weight-bold"
                 },
                 {

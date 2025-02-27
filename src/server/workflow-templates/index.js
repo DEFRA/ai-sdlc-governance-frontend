@@ -10,12 +10,23 @@ export const workflowTemplates = {
       server.route([
         {
           method: 'GET',
+          path: '/workflow-templates/{id}',
+          handler: workflowTemplatesController.detail.bind(
+            workflowTemplatesController
+          ),
+          options: {
+            description: 'View workflow template details',
+            auth: false
+          }
+        },
+        {
+          method: 'GET',
           path: '/governance-templates/{governanceTemplateId}/workflows/new',
           handler: workflowTemplatesController.new.bind(
             workflowTemplatesController
           ),
           options: {
-            description: 'Create new workflow template',
+            description: 'New workflow template form',
             auth: false
           }
         },
@@ -32,12 +43,23 @@ export const workflowTemplates = {
         },
         {
           method: 'GET',
-          path: '/workflow-templates/{id}',
-          handler: workflowTemplatesController.detail.bind(
+          path: '/workflow-templates/{id}/delete',
+          handler: workflowTemplatesController.deleteConfirmation.bind(
             workflowTemplatesController
           ),
           options: {
-            description: 'View workflow template details',
+            description: 'Workflow template delete confirmation',
+            auth: false
+          }
+        },
+        {
+          method: 'POST',
+          path: '/workflow-templates/{id}/delete',
+          handler: workflowTemplatesController.delete.bind(
+            workflowTemplatesController
+          ),
+          options: {
+            description: 'Delete workflow template',
             auth: false
           }
         },

@@ -213,5 +213,125 @@ export const workflowTemplatesController = {
         error: 'Unable to load workflow template'
       })
     }
+  },
+
+  async deleteConfirmation(request, h) {
+    try {
+      const { id } = request.params
+
+      // Fetch workflow template details
+      const workflowResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/workflow-templates/${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!workflowResponse.ok) {
+        throw new Error(
+          `API call failed with status: ${workflowResponse.status}`
+        )
+      }
+
+      const workflow = await workflowResponse.json()
+
+      return h.view('workflow-templates/views/delete-confirmation', {
+        pageTitle: 'Delete Workflow Template',
+        workflow
+      })
+    } catch (error) {
+      request.logger.error(
+        'Error fetching workflow template for deletion:',
+        error
+      )
+      return h.view('workflow-templates/views/delete-confirmation', {
+        pageTitle: 'Delete Workflow Template',
+        error: 'Unable to load workflow template details. Please try again.',
+        workflow: { _id: request.params.id }
+      })
+    }
+  },
+
+  async delete(request, h) {
+    try {
+      const { id } = request.params
+
+      // Get the workflow first to know where to redirect after deletion
+      const workflowResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/workflow-templates/${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      let governanceTemplateId = null
+      if (workflowResponse.ok) {
+        const workflow = await workflowResponse.json()
+        governanceTemplateId = workflow.governanceTemplateId
+      }
+
+      // Delete the workflow template
+      const response = await fetch(
+        `${config.get('apiServer')}/api/v1/workflow-templates/${id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`API call failed with status: ${response.status}`)
+      }
+
+      // Redirect to the governance template if we have its ID, otherwise to the workflows list
+      if (governanceTemplateId) {
+        return h.redirect(`/governance-templates/${governanceTemplateId}`)
+      } else {
+        return h.redirect('/governance-templates')
+      }
+    } catch (error) {
+      request.logger.error('Error deleting workflow template:', error)
+
+      // Try to fetch the workflow again to show the error page
+      try {
+        const workflowResponse = await fetch(
+          `${config.get('apiServer')}/api/v1/workflow-templates/${request.params.id}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+
+        const workflow = workflowResponse.ok
+          ? await workflowResponse.json()
+          : { _id: request.params.id }
+
+        return h.view('workflow-templates/views/delete-confirmation', {
+          pageTitle: 'Delete Workflow Template',
+          error: 'Unable to delete workflow template. Please try again.',
+          workflow
+        })
+      } catch (fetchError) {
+        request.logger.error(
+          'Error fetching workflow after delete failure:',
+          fetchError
+        )
+        return h.view('workflow-templates/views/delete-confirmation', {
+          pageTitle: 'Delete Workflow Template',
+          error: 'Unable to delete workflow template. Please try again.',
+          workflow: { _id: request.params.id }
+        })
+      }
+    }
   }
 }
