@@ -429,5 +429,89 @@ export const projectsController = {
         error: 'Unable to load project diagram'
       })
     }
+  },
+
+  async deleteConfirmation(request, h) {
+    try {
+      const { id } = request.params
+
+      // Fetch project details
+      const response = await fetch(
+        `${config.get('apiServer')}/api/v1/projects/${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`API call failed with status: ${response.status}`)
+      }
+
+      const project = await response.json()
+
+      return h.view('projects/views/delete-confirmation', {
+        pageTitle: 'Delete Project',
+        project
+      })
+    } catch (error) {
+      request.logger.error('Error loading project for deletion:', error)
+      return h.view('projects/views/delete-confirmation', {
+        pageTitle: 'Project Not Found',
+        error: 'Unable to load project details'
+      })
+    }
+  },
+
+  async delete(request, h) {
+    try {
+      const { id } = request.params
+
+      const response = await fetch(
+        `${config.get('apiServer')}/api/v1/projects/${id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`API call failed with status: ${response.status}`)
+      }
+
+      return h.redirect('/projects')
+    } catch (error) {
+      request.logger.error('Error deleting project:', error)
+
+      // Fetch project details again to redisplay the confirmation page with error
+      try {
+        const projectResponse = await fetch(
+          `${config.get('apiServer')}/api/v1/projects/${request.params.id}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+
+        const project = await projectResponse.json()
+
+        return h.view('projects/views/delete-confirmation', {
+          pageTitle: 'Delete Project',
+          project,
+          error: 'Unable to delete project. Please try again.'
+        })
+      } catch (fetchError) {
+        return h.view('projects/views/delete-confirmation', {
+          pageTitle: 'Project Not Found',
+          error: 'Unable to delete project. Please try again.'
+        })
+      }
+    }
   }
 }
