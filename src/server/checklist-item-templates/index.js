@@ -10,7 +10,7 @@ export const checklistItemTemplates = {
       server.route([
         {
           method: 'GET',
-          path: '/checklist-items/{id}',
+          path: '/checklist-item-templates/{id}',
           handler: checklistItemTemplatesController.detail.bind(
             checklistItemTemplatesController
           ),
@@ -21,7 +21,7 @@ export const checklistItemTemplates = {
         },
         {
           method: ['POST', 'PUT'],
-          path: '/checklist-items/{id}',
+          path: '/checklist-item-templates/{id}',
           handler: checklistItemTemplatesController.update.bind(
             checklistItemTemplatesController
           ),
@@ -49,6 +49,28 @@ export const checklistItemTemplates = {
           ),
           options: {
             description: 'Create new checklist item template',
+            auth: false
+          }
+        },
+        {
+          method: 'GET',
+          path: '/checklist-item-templates/{id}/delete',
+          handler: checklistItemTemplatesController.deleteConfirmation.bind(
+            checklistItemTemplatesController
+          ),
+          options: {
+            description: 'Checklist item template delete confirmation',
+            auth: false
+          }
+        },
+        {
+          method: 'POST',
+          path: '/checklist-item-templates/{id}/delete',
+          handler: checklistItemTemplatesController.delete.bind(
+            checklistItemTemplatesController
+          ),
+          options: {
+            description: 'Delete checklist item template',
             auth: false
           }
         }

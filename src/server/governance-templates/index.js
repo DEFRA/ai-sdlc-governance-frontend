@@ -62,6 +62,28 @@ export const governanceTemplates = {
             description: 'View governance template dependencies diagram',
             auth: false
           }
+        },
+        {
+          method: 'GET',
+          path: '/governance-templates/{id}/delete',
+          handler: governanceTemplatesController.deleteConfirmation.bind(
+            governanceTemplatesController
+          ),
+          options: {
+            description: 'Governance template delete confirmation',
+            auth: false
+          }
+        },
+        {
+          method: 'POST',
+          path: '/governance-templates/{id}/delete',
+          handler: governanceTemplatesController.delete.bind(
+            governanceTemplatesController
+          ),
+          options: {
+            description: 'Delete governance template',
+            auth: false
+          }
         }
       ])
     }

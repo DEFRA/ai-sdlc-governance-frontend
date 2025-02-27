@@ -34,26 +34,36 @@
             {% endif %}
           </dl>
 
+          <div class="govuk-button-group">
+            {{ govukButton({
+              text: "Add new workflow",
+              href: "/governance-templates/" + template._id + "/workflows/new",
+              classes: "govuk-button--secondary",
+              attributes: {
+                "data-testid": "add-workflow-button"
+              }
+            }) }}
+
+            {{ govukButton({
+              text: "View Dependencies Diagram",
+              href: "/governance-templates/" + template._id + "/diagram",
+              classes: "govuk-button--secondary",
+              attributes: {
+                "data-testid": "view-diagram-button"
+              }
+            }) }}
+
+            {{ govukButton({
+              text: "Delete Template",
+              classes: "govuk-button--warning",
+              href: "/governance-templates/" + template._id + "/delete",
+              attributes: {
+                "data-testid": "delete-template-button-" + template._id
+              }
+            }) }}
+          </div>
+
           <h2 class="govuk-heading-l">Associated Workflows</h2>
-
-          {{ govukButton({
-            text: "Add new workflow",
-            href: "/governance-templates/" + template._id + "/workflows/new",
-            classes: "govuk-button--secondary",
-            attributes: {
-              "data-testid": "add-workflow-button"
-            }
-          }) }}
-
-          {{ govukButton({
-            text: "View Dependencies Diagram",
-            href: "/governance-templates/" + template._id + "/diagram",
-            classes: "govuk-button--secondary",
-            attributes: {
-              "data-testid": "view-diagram-button"
-            }
-          }) }}
-
 
           {% if template.workflowTemplates and template.workflowTemplates.length > 0 %}
             <table class="govuk-table">
