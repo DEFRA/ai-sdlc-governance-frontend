@@ -30,14 +30,25 @@
           <h1 class="govuk-heading-xl">Project: {{ project.name }}</h1>
           <p class="govuk-body-l">{{ project.governanceTemplate.name }} - v{{ project.governanceTemplate.version }}</p>
 
-          {{ govukButton({
-            text: "View Dependencies Diagram",
-            href: "/projects/" + project._id + "/diagram",
-            classes: "govuk-button--secondary govuk-!-margin-bottom-6",
-            attributes: {
-              "data-testid": "view-diagram-button"
-            }
-          }) }}
+          <div class="govuk-button-group">
+            {{ govukButton({
+              text: "View Dependencies Diagram",
+              href: "/projects/" + project._id + "/diagram",
+              classes: "govuk-button--secondary",
+              attributes: {
+                "data-testid": "view-diagram-button"
+              }
+            }) }}
+
+            {{ govukButton({
+              text: "Delete Project",
+              href: "/projects/" + project._id + "/delete",
+              classes: "govuk-button--warning",
+              attributes: {
+                "data-testid": "delete-project-button"
+              }
+            }) }}
+          </div>
 
           {% if project.workflowInstances and project.workflowInstances.length > 0 %}
             {% for workflow in project.workflowInstances %}

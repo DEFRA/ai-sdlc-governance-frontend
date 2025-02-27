@@ -45,6 +45,25 @@ export const projects = {
           }
         },
         {
+          method: 'GET',
+          path: '/projects/{id}/delete',
+          handler:
+            projectsController.deleteConfirmation.bind(projectsController),
+          options: {
+            description: 'Show project deletion confirmation',
+            auth: false
+          }
+        },
+        {
+          method: 'POST',
+          path: '/projects/{id}/delete',
+          handler: projectsController.delete.bind(projectsController),
+          options: {
+            description: 'Delete project',
+            auth: false
+          }
+        },
+        {
           method: 'POST',
           path: '/checklist-item-instances/{id}/status',
           handler:
