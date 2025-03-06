@@ -84,6 +84,17 @@ export const governanceTemplates = {
             description: 'Delete governance template',
             auth: false
           }
+        },
+        {
+          method: 'POST',
+          path: '/governance-templates/{id}/workflows/{workflowId}/reorder',
+          handler: governanceTemplatesController.reorderWorkflow.bind(
+            governanceTemplatesController
+          ),
+          options: {
+            description: 'Reorder workflow in governance template',
+            auth: false
+          }
         }
       ])
     }
