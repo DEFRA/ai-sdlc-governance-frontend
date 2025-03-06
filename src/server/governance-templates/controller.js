@@ -115,7 +115,24 @@ export const governanceTemplatesController = {
       }
 
       const workflowTemplates = await workflowsResponse.json()
-      template.workflowTemplates = workflowTemplates
+
+      // Sort workflow templates by order if available, otherwise keep the original order
+      template.workflowTemplates = workflowTemplates.sort((a, b) => {
+        // If both have order, sort by order
+        if (a.order !== undefined && b.order !== undefined) {
+          return a.order - b.order
+        }
+        // If only a has order, a comes first
+        if (a.order !== undefined) {
+          return -1
+        }
+        // If only b has order, b comes first
+        if (b.order !== undefined) {
+          return 1
+        }
+        // If neither has order, maintain original order
+        return 0
+      })
 
       request.logger.info(
         `Found ${workflowTemplates.length} workflow templates for governance template ${id}`
@@ -123,13 +140,15 @@ export const governanceTemplatesController = {
 
       return h.view('governance-templates/views/detail', {
         pageTitle: `${template.name} (${template.version})`,
-        template
+        template,
+        request
       })
     } catch (error) {
       request.logger.error('Error loading governance template:', error)
       return h.view('governance-templates/views/detail', {
         pageTitle: 'Template Not Found',
-        error: 'Unable to load governance template'
+        error: 'Unable to load governance template',
+        request
       })
     }
   },
@@ -304,6 +323,42 @@ export const governanceTemplatesController = {
           template: { _id: request.params.id }
         })
       }
+    }
+  },
+
+  async reorderWorkflow(request, h) {
+    try {
+      const { id, workflowId } = request.params
+      const { direction } = request.payload
+
+      // Call the API to reorder the workflow
+      const response = await fetch(
+        `${config.get('apiServer')}/api/v1/workflow-templates/${workflowId}/reorder`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            governanceTemplateId: id,
+            direction
+          })
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`API call failed with status: ${response.status}`)
+      }
+
+      // Redirect back to the governance template detail page
+      return h.redirect(`/governance-templates/${id}`)
+    } catch (error) {
+      request.logger.error('Error reordering workflow:', error)
+
+      // Redirect back to the governance template detail page with an error
+      return h.redirect(
+        `/governance-templates/${request.params.id}?error=Unable to reorder workflow. Please try again.`
+      )
     }
   }
 }

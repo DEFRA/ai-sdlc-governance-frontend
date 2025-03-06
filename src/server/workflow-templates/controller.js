@@ -333,5 +333,104 @@ export const workflowTemplatesController = {
         })
       }
     }
+  },
+
+  async updateOrder(request, h) {
+    try {
+      const { id } = request.params
+      const { order } = request.payload
+
+      request.logger.info(
+        `Updating order for workflow template ${id} to ${order}`
+      )
+
+      const apiUrl = `${config.get('apiServer')}/api/v1/workflow-templates/${id}`
+      const requestBody = {
+        order: parseInt(order, 10)
+      }
+
+      request.logger.info(
+        `Making PUT request to ${apiUrl} with body:`,
+        requestBody
+      )
+
+      const response = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        request.logger.error(
+          `API call failed with status: ${response.status}, body: ${errorText}`
+        )
+        throw new Error(`API call failed with status: ${response.status}`)
+      }
+
+      const updatedWorkflow = await response.json()
+      request.logger.info(
+        `Successfully updated workflow template order for ID: ${updatedWorkflow._id}`
+      )
+
+      // Get the governance template ID to redirect back to the template detail page
+      const workflowResponse = await fetch(
+        `${config.get('apiServer')}/api/v1/workflow-templates/${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (workflowResponse.ok) {
+        const workflow = await workflowResponse.json()
+        if (workflow.governanceTemplateId) {
+          return h.redirect(
+            `/governance-templates/${workflow.governanceTemplateId}`
+          )
+        }
+      }
+
+      // Fallback redirect if we can't get the governance template ID
+      return h.redirect('/governance-templates')
+    } catch (error) {
+      request.logger.error('Error updating workflow template order:', error)
+
+      // Try to get the governance template ID for redirection with error
+      try {
+        const workflowResponse = await fetch(
+          `${config.get('apiServer')}/api/v1/workflow-templates/${request.params.id}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+
+        if (workflowResponse.ok) {
+          const workflow = await workflowResponse.json()
+          if (workflow.governanceTemplateId) {
+            return h.redirect(
+              `/governance-templates/${workflow.governanceTemplateId}?error=Unable to update workflow order. Please try again.`
+            )
+          }
+        }
+      } catch (fetchError) {
+        request.logger.error(
+          'Error fetching workflow after update failure:',
+          fetchError
+        )
+      }
+
+      // Fallback redirect with error
+      return h.redirect(
+        '/governance-templates?error=Unable to update workflow order. Please try again.'
+      )
+    }
   }
 }

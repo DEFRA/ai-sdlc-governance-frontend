@@ -73,6 +73,17 @@ export const workflowTemplates = {
             description: 'View workflow dependencies diagram',
             auth: false
           }
+        },
+        {
+          method: ['POST', 'PUT'],
+          path: '/api/v1/workflow-templates/{id}',
+          handler: workflowTemplatesController.updateOrder.bind(
+            workflowTemplatesController
+          ),
+          options: {
+            description: 'Update workflow template order',
+            auth: false
+          }
         }
       ])
     }
