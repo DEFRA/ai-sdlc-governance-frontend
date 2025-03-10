@@ -73,6 +73,17 @@ export const checklistItemTemplates = {
             description: 'Delete checklist item template',
             auth: false
           }
+        },
+        {
+          method: ['POST', 'PUT'],
+          path: '/api/v1/checklist-item-templates/{id}',
+          handler: checklistItemTemplatesController.updateOrder.bind(
+            checklistItemTemplatesController
+          ),
+          options: {
+            description: 'Update checklist item template order',
+            auth: false
+          }
         }
       ])
     }

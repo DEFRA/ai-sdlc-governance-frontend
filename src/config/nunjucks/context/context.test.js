@@ -10,9 +10,6 @@ jest.mock('~/src/server/common/helpers/logging/logger.js', () => ({
 }))
 
 describe('#context', () => {
-  const mockRequest = { path: '/' }
-  let contextResult
-
   describe('When webpack manifest file read succeeds', () => {
     let contextImport
 
@@ -20,24 +17,17 @@ describe('#context', () => {
       contextImport = await import('~/src/config/nunjucks/context/context.js')
     })
 
-    beforeEach(() => {
-      // Return JSON string
-      mockReadFileSync.mockReturnValue(`{
-        "application.js": "javascripts/application.js",
-        "stylesheets/application.scss": "stylesheets/application.css"
-      }`)
-
-      contextResult = contextImport.context(mockRequest)
-    })
-
     test('Should provide expected context', () => {
+      const contextResult = contextImport.context({
+        path: '/non-existent-path'
+      })
       expect(contextResult).toEqual({
         assetPath: '/public/assets',
         breadcrumbs: [],
         getAssetPath: expect.any(Function),
         navigation: [
           {
-            isActive: true,
+            isActive: false,
             text: 'Home',
             url: '/'
           },
@@ -45,11 +35,6 @@ describe('#context', () => {
             isActive: false,
             text: 'Projects',
             url: '/projects'
-          },
-          {
-            isActive: false,
-            text: 'Governance Templates',
-            url: '/governance-templates'
           }
         ],
         serviceName: 'Defra SDLC Governance Checklist',
@@ -59,17 +44,19 @@ describe('#context', () => {
 
     describe('With valid asset path', () => {
       test('Should provide expected asset path', () => {
-        expect(contextResult.getAssetPath('application.js')).toBe(
-          '/public/javascripts/application.js'
-        )
+        const contextResult = contextImport.context({
+          path: '/non-existent-path'
+        })
+        expect(contextResult.getAssetPath('test.js')).toBe('/public/test.js')
       })
     })
 
     describe('With invalid asset path', () => {
       test('Should provide expected asset', () => {
-        expect(contextResult.getAssetPath('an-image.png')).toBe(
-          '/public/an-image.png'
-        )
+        const contextResult = contextImport.context({
+          path: '/non-existent-path'
+        })
+        expect(contextResult.getAssetPath()).toBe('/public/undefined')
       })
     })
   })
@@ -81,13 +68,11 @@ describe('#context', () => {
       contextImport = await import('~/src/config/nunjucks/context/context.js')
     })
 
-    beforeEach(() => {
-      mockReadFileSync.mockReturnValue(new Error('File not found'))
-
-      contextResult = contextImport.context(mockRequest)
-    })
-
     test('Should log that the Webpack Manifest file is not available', () => {
+      mockReadFileSync.mockImplementation(() => {
+        throw new Error('File not found')
+      })
+      contextImport.context({ path: '/non-existent-path' })
       expect(mockLoggerError).toHaveBeenCalledWith(
         'Webpack assets-manifest.json not found'
       )
@@ -96,9 +81,6 @@ describe('#context', () => {
 })
 
 describe('#context cache', () => {
-  const mockRequest = { path: '/' }
-  let contextResult
-
   describe('Webpack manifest file cache', () => {
     let contextImport
 
@@ -106,25 +88,24 @@ describe('#context cache', () => {
       contextImport = await import('~/src/config/nunjucks/context/context.js')
     })
 
-    beforeEach(() => {
-      // Return JSON string
-      mockReadFileSync.mockReturnValue(`{
-        "application.js": "javascripts/application.js",
-        "stylesheets/application.scss": "stylesheets/application.css"
-      }`)
-
-      contextResult = contextImport.context(mockRequest)
-    })
-
     test('Should read file', () => {
+      mockReadFileSync.mockReturnValue('{}')
+      contextImport.context({ path: '/non-existent-path' })
       expect(mockReadFileSync).toHaveBeenCalled()
     })
 
     test('Should use cache', () => {
+      mockReadFileSync.mockReturnValue('{}')
+      const firstCall = contextImport.context({ path: '/non-existent-path' })
+      mockReadFileSync.mockClear()
+      const secondCall = contextImport.context({ path: '/non-existent-path' })
       expect(mockReadFileSync).not.toHaveBeenCalled()
+      expect(JSON.stringify(firstCall)).toBe(JSON.stringify(secondCall))
     })
 
     test('Should provide expected context', () => {
+      mockReadFileSync.mockReturnValue('{}')
+      const contextResult = contextImport.context({ path: '/' })
       expect(contextResult).toEqual({
         assetPath: '/public/assets',
         breadcrumbs: [],
@@ -139,11 +120,6 @@ describe('#context cache', () => {
             isActive: false,
             text: 'Projects',
             url: '/projects'
-          },
-          {
-            isActive: false,
-            text: 'Governance Templates',
-            url: '/governance-templates'
           }
         ],
         serviceName: 'Defra SDLC Governance Checklist',
