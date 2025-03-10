@@ -34,6 +34,24 @@ export const checklistItemTemplatesController = {
 
       const workflow = await workflowResponse.json()
 
+      // Fetch all workflows in the governance template for workflow name mapping
+      const workflowsApiUrl = `${config.get('apiServer')}/api/v1/workflow-templates?governanceTemplateId=${workflow.governanceTemplateId}`
+      const allWorkflowsResponse = await fetch(workflowsApiUrl)
+
+      if (!allWorkflowsResponse.ok) {
+        throw new Error('Failed to fetch workflows')
+      }
+
+      const allWorkflows = await allWorkflowsResponse.json()
+
+      // Create a map of workflow IDs to names for quick lookup
+      const workflowMap = {}
+      allWorkflows.forEach((w) => {
+        if (w?._id && w.name) {
+          workflowMap[w._id] = w.name
+        }
+      })
+
       // Fetch all checklist items for dependencies
       const checklistItemsApiUrl = `${config.get('apiServer')}/api/v1/checklist-item-templates?governanceTemplateId=${workflow.governanceTemplateId}`
       const checklistItemsResponse = await fetch(checklistItemsApiUrl)
@@ -58,7 +76,8 @@ export const checklistItemTemplatesController = {
         .map((item) => ({
           _id: item._id,
           name: item.name || 'Unnamed Item',
-          workflowName: workflow.name
+          workflowName:
+            workflowMap[item.workflowTemplateId] || 'Unknown Workflow'
         }))
 
       request.logger.info('Template data:', {
