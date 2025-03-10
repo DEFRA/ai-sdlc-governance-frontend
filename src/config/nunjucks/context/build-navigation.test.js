@@ -21,11 +21,6 @@ describe('#buildNavigation', () => {
         isActive: false,
         text: 'Projects',
         url: '/projects'
-      },
-      {
-        isActive: false,
-        text: 'Governance Templates',
-        url: '/governance-templates'
       }
     ])
   })
@@ -41,33 +36,6 @@ describe('#buildNavigation', () => {
         isActive: true,
         text: 'Projects',
         url: '/projects'
-      },
-      {
-        isActive: false,
-        text: 'Governance Templates',
-        url: '/governance-templates'
-      }
-    ])
-  })
-
-  test('Should mark governance templates as active when on governance templates path', () => {
-    expect(
-      buildNavigation(mockRequest({ path: '/governance-templates' }))
-    ).toEqual([
-      {
-        isActive: false,
-        text: 'Home',
-        url: '/'
-      },
-      {
-        isActive: false,
-        text: 'Projects',
-        url: '/projects'
-      },
-      {
-        isActive: true,
-        text: 'Governance Templates',
-        url: '/governance-templates'
       }
     ])
   })
@@ -87,11 +55,6 @@ describe('#buildNavigation', () => {
       {
         text: 'Projects',
         url: '/projects',
-        isActive: false
-      },
-      {
-        text: 'Governance Templates',
-        url: '/governance-templates',
         isActive: false
       }
     ])

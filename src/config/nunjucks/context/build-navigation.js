@@ -12,11 +12,6 @@ export function buildNavigation(request) {
       text: 'Projects',
       url: '/projects',
       isActive: request?.path?.startsWith('/projects')
-    },
-    {
-      text: 'Governance Templates',
-      url: '/governance-templates',
-      isActive: request?.path?.startsWith('/governance-templates')
     }
   ]
 }

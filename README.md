@@ -41,6 +41,10 @@ cd ai-sdlc-governance-frontend
 nvm use
 ```
 
+## Governance Template Admin
+
+The Governance Template admin interface can be accessed by navigating to the `/governance-templates` page. This interface allows administrators to manage and configure governance templates for the system.
+
 ## Server-side Caching
 
 We use Catbox for server-side caching. By default the service will use CatboxRedis when deployed and CatboxMemory for
