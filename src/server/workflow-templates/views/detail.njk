@@ -62,73 +62,97 @@
 
           <h2 class="govuk-heading-l">Checklist Items</h2>
 
+          {% if workflow.checklistItemTemplates and workflow.checklistItemTemplates.length > 1 %}
+            <p class="govuk-hint">Use the up and down arrows to reorder checklist items.</p>
+          {% endif %}
+
           {% if workflow.checklistItemTemplates and workflow.checklistItemTemplates.length > 0 %}
-            {% set tableRows = [] %}
-            {% for item in workflow.checklistItemTemplates %}
-              {% set dependenciesRequires = [] %}
-              {% if item.dependencies_requires %}
-                {% for dep in item.dependencies_requires %}
-                  {% if dep.name %}
-                    {% set _ = dependenciesRequires.push(dep.name) %}
+            <table class="govuk-table">
+              <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                  <th scope="col" class="govuk-table__header">Name</th>
+                  <th scope="col" class="govuk-table__header">Type</th>
+                  <th scope="col" class="govuk-table__header">Description</th>
+                  <th scope="col" class="govuk-table__header">Requires</th>
+                  <th scope="col" class="govuk-table__header">Required By</th>
+                  <th scope="col" class="govuk-table__header">Reorder</th>
+                </tr>
+              </thead>
+              <tbody class="govuk-table__body">
+                {% for item in workflow.checklistItemTemplates %}
+                  {% set dependenciesRequires = [] %}
+                  {% if item.dependencies_requires %}
+                    {% for dep in item.dependencies_requires %}
+                      {% if dep.name %}
+                        {% set _ = dependenciesRequires.push(dep.name) %}
+                      {% else %}
+                        {% for depItem in workflow.checklistItemTemplates %}
+                          {% if depItem._id == dep %}
+                            {% set _ = dependenciesRequires.push(depItem.name) %}
+                          {% endif %}
+                        {% endfor %}
+                      {% endif %}
+                    {% endfor %}
+                  {% endif %}
+
+                  {% set dependenciesRequiredBy = [] %}
+                  {% if item.dependencies_requiredBy %}
+                    {% for dep in item.dependencies_requiredBy %}
+                      {% set _ = dependenciesRequiredBy.push(dep.name) %}
+                    {% endfor %}
                   {% else %}
                     {% for depItem in workflow.checklistItemTemplates %}
-                      {% if depItem._id == dep %}
-                        {% set _ = dependenciesRequires.push(depItem.name) %}
+                      {% if depItem.dependencies_requires %}
+                        {% for dep in depItem.dependencies_requires %}
+                          {% if (dep._id and dep._id == item._id) or dep == item._id %}
+                            {% set _ = dependenciesRequiredBy.push(depItem.name) %}
+                          {% endif %}
+                        {% endfor %}
                       {% endif %}
                     {% endfor %}
                   {% endif %}
-                {% endfor %}
-              {% endif %}
 
-              {% set dependenciesRequiredBy = [] %}
-              {% if item.dependencies_requiredBy %}
-                {% for dep in item.dependencies_requiredBy %}
-                  {% set _ = dependenciesRequiredBy.push(dep.name) %}
+                  <tr class="govuk-table__row">
+                    <td class="govuk-table__cell govuk-!-font-weight-bold">
+                      <a href="/checklist-item-templates/{{ item._id }}" class="govuk-link" data-testid="checklist-item-link">{{ item.name }}</a>
+                    </td>
+                    <td class="govuk-table__cell">
+                      {{ item.type if item.type else "Not specified" }}
+                    </td>
+                    <td class="govuk-table__cell">
+                      {{ item.description if item.description else "No description provided" }}
+                    </td>
+                    <td class="govuk-table__cell">
+                      {{ dependenciesRequires | join(", ") if dependenciesRequires.length else "None" }}
+                    </td>
+                    <td class="govuk-table__cell">
+                      {{ dependenciesRequiredBy | join(", ") if dependenciesRequiredBy.length else "None" }}
+                    </td>
+                    <td class="govuk-table__cell">
+                      <div class="govuk-button-group">
+                        {% if not loop.first %}
+                          <form method="POST" action="/api/v1/checklist-item-templates/{{ item._id }}" class="govuk-!-margin-bottom-0 govuk-!-margin-right-2" style="display: inline-block;">
+                            <input type="hidden" name="order" value="{{ (item.order if item.order is defined else loop.index) - 1 }}">
+                            <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 govuk-!-padding-left-2 govuk-!-padding-right-2" data-module="govuk-button" aria-label="Move {{ item.name }} up" data-testid="move-up-button-{{ item._id }}">
+                              <span aria-hidden="true">↑</span>
+                            </button>
+                          </form>
+                        {% endif %}
+                        
+                        {% if not loop.last %}
+                          <form method="POST" action="/api/v1/checklist-item-templates/{{ item._id }}" class="govuk-!-margin-bottom-0" style="display: inline-block;">
+                            <input type="hidden" name="order" value="{{ (item.order if item.order is defined else loop.index) + 1 }}">
+                            <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 govuk-!-padding-left-2 govuk-!-padding-right-2" data-module="govuk-button" aria-label="Move {{ item.name }} down" data-testid="move-down-button-{{ item._id }}">
+                              <span aria-hidden="true">↓</span>
+                            </button>
+                          </form>
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
                 {% endfor %}
-              {% else %}
-                {% for depItem in workflow.checklistItemTemplates %}
-                  {% if depItem.dependencies_requires %}
-                    {% for dep in depItem.dependencies_requires %}
-                      {% if (dep._id and dep._id == item._id) or dep == item._id %}
-                        {% set _ = dependenciesRequiredBy.push(depItem.name) %}
-                      {% endif %}
-                    {% endfor %}
-                  {% endif %}
-                {% endfor %}
-              {% endif %}
-
-              {% set row = [
-                {
-                  html: "<a href='/checklist-item-templates/" + item._id + "' class='govuk-link' data-testid='checklist-item-link'>" + item.name + "</a>",
-                  classes: "govuk-!-font-weight-bold"
-                },
-                {
-                  text: item.type if item.type else "Not specified"
-                },
-                {
-                  text: item.description if item.description else "No description provided"
-                },
-                {
-                  text: dependenciesRequires | join(", ") if dependenciesRequires.length else "None"
-                },
-                {
-                  text: dependenciesRequiredBy | join(", ") if dependenciesRequiredBy.length else "None"
-                }
-              ] %}
-              {% set tableRows = (tableRows.push(row), tableRows) %}
-            {% endfor %}
-
-            {{ govukTable({
-              firstCellIsHeader: true,
-              head: [
-                { text: "Name" },
-                { text: "Type" },
-                { text: "Description" },
-                { text: "Requires" },
-                { text: "Required By" }
-              ],
-              rows: tableRows
-            }) }}
+              </tbody>
+            </table>
           {% else %}
             <p class="govuk-body">No checklist items defined for this workflow.</p>
           {% endif %}

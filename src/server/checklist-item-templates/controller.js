@@ -115,7 +115,8 @@ export const checklistItemTemplatesController = {
       name,
       description,
       type,
-      dependenciesRequires = []
+      dependenciesRequires = [],
+      order
     } = request.payload
     let workflowTemplateId
 
@@ -133,6 +134,17 @@ export const checklistItemTemplatesController = {
 
       const checklistItem = await checklistItemResponse.json()
       workflowTemplateId = checklistItem.workflowTemplateId
+
+      // If only order is provided, delegate to updateOrder method
+      if (
+        order !== undefined &&
+        !name &&
+        !description &&
+        !type &&
+        (!dependenciesRequires || dependenciesRequires.length === 0)
+      ) {
+        return this.updateOrder(request, h)
+      }
 
       // Ensure dependencies_requires is always an array and properly formatted
       const dependencies = (
@@ -539,82 +551,97 @@ export const checklistItemTemplatesController = {
   },
 
   async delete(request, h) {
-    try {
-      const { id } = request.params
+    const { id } = request.params
 
-      // Get the checklist item first to know where to redirect after deletion
+    try {
+      request.logger.info(`Deleting checklist item template ${id}`)
+
+      // First get the checklist item to get the workflow ID
       const checklistItemResponse = await fetch(
-        `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
+        `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`
       )
 
-      let workflowTemplateId = null
-      if (checklistItemResponse.ok) {
-        const checklistItem = await checklistItemResponse.json()
-        workflowTemplateId = checklistItem.workflowTemplateId
+      if (!checklistItemResponse.ok) {
+        throw new Error('Failed to fetch checklist item template')
       }
 
-      // Delete the checklist item template
-      const response = await fetch(
+      const checklistItem = await checklistItemResponse.json()
+      const workflowTemplateId = checklistItem.workflowTemplateId
+
+      // Make the delete API call
+      const deleteResponse = await fetch(
         `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`,
         {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json'
-          }
+          method: 'DELETE'
         }
       )
 
+      if (!deleteResponse.ok) {
+        throw new Error('Failed to delete checklist item template')
+      }
+
+      // Redirect back to the workflow template page
+      return h.redirect(`/workflow-templates/${workflowTemplateId}`)
+    } catch (error) {
+      request.logger.error('Error deleting checklist item template:', error)
+      return Boom.badImplementation('Error deleting checklist item template')
+    }
+  },
+
+  async updateOrder(request, h) {
+    try {
+      const { id } = request.params
+      const { order } = request.payload || {}
+
+      request.logger.info(
+        `Updating order for checklist item template ${id} to ${order}`
+      )
+
+      const apiUrl = `${config.get('apiServer')}/api/v1/checklist-item-templates/${id}`
+      const requestBody = {
+        order: parseInt(order, 10)
+      }
+
+      request.logger.info(
+        `Making PUT request to ${apiUrl} with body:`,
+        requestBody
+      )
+
+      const response = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      })
+
       if (!response.ok) {
+        const errorText = await response.text()
+        request.logger.error(
+          `API call failed with status: ${response.status}, body: ${errorText}`
+        )
         throw new Error(`API call failed with status: ${response.status}`)
       }
 
-      // Redirect to the workflow template if we have its ID, otherwise to the governance templates list
-      if (workflowTemplateId) {
-        return h.redirect(`/workflow-templates/${workflowTemplateId}`)
-      } else {
-        return h.redirect('/governance-templates')
+      // Get the checklist item to get the workflow ID for redirection
+      const checklistItemResponse = await fetch(apiUrl)
+      if (!checklistItemResponse.ok) {
+        throw new Error('Failed to fetch checklist item template after update')
       }
+
+      const checklistItem = await checklistItemResponse.json()
+      const workflowTemplateId = checklistItem.workflowTemplateId
+
+      // Redirect back to the workflow template page
+      return h.redirect(`/workflow-templates/${workflowTemplateId}`)
     } catch (error) {
-      request.logger.error('Error deleting checklist item template:', error)
-
-      // Try to fetch the checklist item again to show the error page
-      try {
-        const checklistItemResponse = await fetch(
-          `${config.get('apiServer')}/api/v1/checklist-item-templates/${request.params.id}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        )
-
-        const checklistItem = checklistItemResponse.ok
-          ? await checklistItemResponse.json()
-          : { _id: request.params.id }
-
-        return h.view('checklist-item-templates/views/delete-confirmation', {
-          pageTitle: 'Delete Checklist Item Template',
-          error: 'Unable to delete checklist item template. Please try again.',
-          checklistItem
-        })
-      } catch (fetchError) {
-        request.logger.error(
-          'Error fetching checklist item after delete failure:',
-          fetchError
-        )
-        return h.view('checklist-item-templates/views/delete-confirmation', {
-          pageTitle: 'Delete Checklist Item Template',
-          error: 'Unable to delete checklist item template. Please try again.',
-          checklistItem: { _id: request.params.id }
-        })
-      }
+      request.logger.error(
+        'Error updating checklist item template order:',
+        error
+      )
+      return Boom.badImplementation(
+        'Error updating checklist item template order'
+      )
     }
   }
 }
